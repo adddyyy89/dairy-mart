@@ -1,0 +1,82 @@
+dairymartbusinessmail
+Dairymart@1989
+
+-----
+
+Atlassian
+
+https://dairymartbusinessmail.atlassian.net/
+
+---
+
+postgres 17.0
+
+---
+
+https://bitbucket.org/dairymart
+
+----
+
+google api key : AIzaSyA6wxLa0GrjgxrQuJFcMQfHaHKYVdrgBaA
+
+----
+
+AWS
+
+account id: 980921743838
+account name: dairymartaws
+root user email: dairymartbusinessmail@gmail.com
+db port: 5432
+db instance identifier: database-1
+
+
+
+root password: Dairymart@1989
+ec2 instance name: dairymartec2
+instance id: i-008c61ab536369331
+public IPv4 DNS: ec2-35-154-108-12.ap-south-1.compute.amazonaws.com
+public IPv4 address: 35.154.108.12
+keyname: dairymartkey
+private IPv4 address: 172.31.33.69
+private IPv4 DNS: ip-172-31-33-69.ap-south-1.compute.internal
+
+
+--
+public dns: ec2-100-27-28-186.compute-1.amazonaws.com
+public address: 100.27.28.186
+instanceid: i-08124abae45931fea
+password: ;6JQ3AkY3mn0glgm5I-rbPAkfh)qPvFA
+username: Administrator
+
+---
+rds
+master username: postgres
+password: MBMSwLsA81ytzFj6iGoK
+endpoint: dairymartdatabase.cri6uuws02ew.ap-south-1.rds.amazonaws.com
+
+--
+
+S3
+
+s3://dairymarts3bucket
+------
+
+AWS admin user
+	username: DairyMartAdmin
+	pwd: d#Rc8G9!
+
+	sign-in url: https://980921743838.signin.aws.amazon.com/console
+
+-----
+
+dairymart.ap-south-1.elasticbeanstalk.com
+
+service role name: aws-elasticbeanstalk-service-role
+ec2 keypair: dairymartec2-pem
+
+-----
+
+swagger ui : /swagger-ui/index.html
+http://dairymart.ap-south-1.elasticbeanstalk.com:8080/swagger-ui/index.html
+
+----
