@@ -1,0 +1,116 @@
+CREATE TABLE public."UserType"
+(
+    "userTypeId" integer NOT NULL,
+    "userTypeDesc" text NOT NULL,
+    "isActive" boolean NOT NULL,
+    "createdOn" date NOT NULL,
+    "createdBy" integer NOT NULL,
+    CONSTRAINT "USER_TYPE_PK" PRIMARY KEY ("userTypeId")
+);
+
+ALTER TABLE IF EXISTS public."UserType"
+    OWNER to postgres;
+	
+--------------
+
+CREATE TABLE public."Country"
+(
+    "countryId" integer NOT NULL,
+    "countryName" text NOT NULL,
+    CONSTRAINT "COUNTRY_PK" PRIMARY KEY ("countryId")
+);
+
+ALTER TABLE IF EXISTS public."Country"
+    OWNER to postgres;
+
+-------------
+
+CREATE TABLE public."State"
+(
+    "stateId" integer NOT NULL,
+    "stateName" text NOT NULL,
+    "countryId" integer NOT NULL,
+    CONSTRAINT "STATE_PK" PRIMARY KEY ("stateId"),
+    CONSTRAINT "STATE_COUNTRY_FK" FOREIGN KEY ("countryId")
+        REFERENCES public."Country" ("countryId") MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+ALTER TABLE IF EXISTS public."State"
+    OWNER to postgres;
+
+------------
+
+CREATE TABLE public."City"
+(
+    "cityId" integer NOT NULL,
+    "cityName" text NOT NULL,
+    "stateId" integer NOT NULL,
+    CONSTRAINT "CITY_PK" PRIMARY KEY ("cityId"),
+    CONSTRAINT "CITY_STATE_FK" FOREIGN KEY ("stateId")
+        REFERENCES public."State" ("stateId") MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+ALTER TABLE IF EXISTS public."City"
+    OWNER to postgres;
+
+----------
+
+CREATE TABLE public."UserAddress"
+(
+    "addressId" integer NOT NULL,
+    "fullAddress" text NOT NULL,
+    "cityId" integer NOT NULL,
+    CONSTRAINT "USER_ADDRESS_PK" PRIMARY KEY ("addressId"),
+    CONSTRAINT "USERADDRESS_CITY_FK" FOREIGN KEY ("cityId")
+        REFERENCES public."City" ("cityId") MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+ALTER TABLE IF EXISTS public."UserAddress"
+    OWNER to postgres;
+
+---------
+
+CREATE TABLE public."User"
+(
+    "userId" integer NOT NULL,
+    "firstName" text NOT NULL,
+    "lastName" text,
+    "phoneNumber" text NOT NULL,
+    "userTypeId" integer NOT NULL,
+    "emailId" text,
+    "addressId" integer,
+    "createBy" integer NOT NULL,
+    "createdOn" date NOT NULL,
+    "isActive" boolean NOT NULL,
+    "lastUpdated" date NOT NULL,
+    password text NOT NULL,
+    CONSTRAINT "USER_PK" PRIMARY KEY ("userId"),
+    CONSTRAINT "USER_USERTYPE_FK" FOREIGN KEY ("userTypeId")
+        REFERENCES public."UserType" ("userTypeId") MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT "USER_USERADDRESS_FK" FOREIGN KEY ("addressId")
+        REFERENCES public."UserAddress" ("addressId") MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+ALTER TABLE IF EXISTS public."User"
+    OWNER to postgres;
+
+
+-------------
+
+
+	
