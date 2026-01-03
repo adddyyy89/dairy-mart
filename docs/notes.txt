@@ -1,0 +1,103 @@
+dairymartbusinessmail
+Dairymart@1989
+
+-----
+
+Atlassian
+
+https://dairymartbusinessmail.atlassian.net/
+
+---
+
+postgres 17.0
+
+---
+
+https://bitbucket.org/dairymart
+
+----
+
+google api key : AIzaSyA6wxLa0GrjgxrQuJFcMQfHaHKYVdrgBaA
+
+----
+
+AWS
+
+account id: 980921743838
+accohhunt name: dairymartaws
+root user email: dairymartbusinessmail@gmail.com
+db port: 5432
+db instance identifier: database-1
+
+h
+
+root password: Dairymart@1989
+ec2 instance name: dairymartec2
+instance id: i-008c61ab536369331
+public IPv4 DNS: ec2-35-154-108-12.ap-south-1.compute.amazonaws.com
+public IPv4 address: 35.154.108.12
+keyname: dairymartkey
+private IPv4 address: 172.31.33.69
+private IPv4 DNS: ip-172-31-33-69.ap-south-1.compute.internal
+
+
+--
+public dns: ec2-100-27-28-186.compute-1.amazonaws.com
+public address: 100.27.28.186
+instanceid: i-08124abae45931fea
+password: ;6JQ3AkY3mn0glgm5I-rbPAkfh)qPvFA
+username: Administrator
+
+---
+rds
+master username: postgres
+password: MBMSwLsA81ytzFj6iGoK
+endpoint: dairymartdatabase.cri6uuws02ew.ap-south-1.rds.amazonaws.com
+
+--
+
+S3
+
+s3://dairymarts3bucket 
+------
+
+AWS admin user
+	username: DairyMartAdmin
+	pwd: d#Rc8G9!
+	
+	sign-in url: https://980921743838.signin.aws.amazon.com/console
+	
+-----
+
+dairymart.ap-south-1.elasticbeanstalk.com
+
+service role name: aws-elasticbeanstalk-service-role
+ec2 keypair: dairymartec2-pem
+
+
+----
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDHTu67YzBmB5Xc2vtC0XCOGDSjRuZ3zV0",
+  authDomain: "dairy-mart-admin.firebaseapp.com",
+  projectId: "dairy-mart-admin",
+  storageBucket: "dairy-mart-admin.firebasestorage.app",
+  messagingSenderId: "1004777272042",
+  appId: "1:1004777272042:web:fb7017a9c786a5e24a1d93",
+  measurementId: "G-SBXV5S1ER1"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+
+	

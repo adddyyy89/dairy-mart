@@ -1,0 +1,5 @@
+user
+    add admin : /user/add/admin
+    get user  : /user/get/{userid}
+
+

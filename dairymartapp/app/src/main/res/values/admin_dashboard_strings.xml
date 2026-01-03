@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="new_orders">New Orders: </string>
+    <string name="pending_orders">Pending Orders: </string>
+    <string name="orders_in_delivery">Orders In Delivery: </string>
+    <string name="orders_delivered">Orders Delivered: </string>
+</resources>
