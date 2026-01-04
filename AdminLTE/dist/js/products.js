@@ -44,40 +44,47 @@ function searchTable() {
     }
 }
 
-async function getData() {
-  const url = "http://localhost:8080/admin/users/get";
+async function loadProducts() {
+  const url = "http://localhost:8080/product/get"; 
   try {
     const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error("Failed to fetch products");
 
-    const json = await response.json();
-    console.log(json);
+    // The response is a direct array [], so we don't need .map or .myArrayList
+    const products = await response.json();
     
-    const tableBody = document.getElementById("users-table");
-    tableBody.innerHTML = "";
+    const tbody = document.getElementById("product-table-body");
+    tbody.innerHTML = "";
 
-    json.map.users.myArrayList.forEach(user => {
+    products.forEach(product => {
+      // Map JSON keys to your table columns
       const row = `
-        <tr class="clickable-row">
-                    <td><a href="userdetails.html?id=${user.map.userId}" 
-               class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">${user.map.firstName}</a></td>
-                    <td><span class="badge bg-info text-dark">${user.map.type.map.userTypeDesc}</span></td>
-                    <td>${user.map.phoneNumber}</td>
-                    <td>${user.map.emailId}</td>
-                    <td>${user.map.address.map.fullAddress}</td>
-                </tr>
+        <tr style="cursor: pointer;" onclick="goToDetails(${product.productId})">
+          <td>${product.productId}</td>
+          <td>
+            <img src="${product.productPictureUrl}" 
+                 alt="${product.productName}" 
+                 style="width: 50px; height: 50px; object-fit: cover;" 
+                 class="rounded border">
+          </td>
+          <td class="fw-bold">${product.productName}</td>
+          <td>${product.brand?.brandName || 'N/A'}</td>
+          <td>${product.quantity}</td>
+          <td>${product.unit}</td>
+          <td>₹${product.mrp}</td>
+        </tr>
       `;
-      
-      // Append the row to the table
-      tableBody.innerHTML += row;
+      tbody.innerHTML += row;
     });
-    
   } catch (error) {
-    console.error(error.message);
+    console.error("Error fetching products:", error);
+    document.getElementById("product-table-body").innerHTML = 
+      `<tr><td colspan="7" class="text-center text-danger">Failed to load products.</td></tr>`;
   }
 }
 
-// Call the function
-getData();
+function goToDetails(productId) {
+  window.location.href = `productdetails.html?id=${productId}`;
+}
+
+loadProducts();

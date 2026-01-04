@@ -46,7 +46,8 @@ public class SecurityConfig {
                                 "/exceldump/download",
                                 "/admin/dashboard/get",
                                 "/admin/users/get",
-                                "/admin/ledgers/get").permitAll()
+                                "/admin/ledgers/get",
+                                "/product/get/*").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
 
