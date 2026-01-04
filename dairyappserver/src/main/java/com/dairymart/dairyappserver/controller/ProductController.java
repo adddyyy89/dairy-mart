@@ -47,6 +47,7 @@ public class ProductController {
 
     }
 
+    @CrossOrigin("*")
     @GetMapping(value = "/get/{productId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getUser(@PathVariable String productId) {
         logger.info("getProduct called with productId: {}", productId);
@@ -125,5 +126,27 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(d));
 
     }
+
+    @CrossOrigin("*")
+    @GetMapping(value = "/getall", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getAllProducts() {
+        logger.info("get all products called");
+
+        List<ProductDao> productDaoList = productService.getAllProducts();
+        List<ProductDTO> dtoList = new ArrayList<>(productDaoList.size());
+        for(ProductDao productDao : productDaoList) {
+            dtoList.add(new ProductDTO(productDao));
+        }
+
+        if(dtoList.isEmpty()) {
+            logger.info("No Products found");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Product not found");
+        }
+
+        logger.info("Product retrieved = {}", dtoList.size());
+        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(dtoList));
+    }
+
+
 
 }
