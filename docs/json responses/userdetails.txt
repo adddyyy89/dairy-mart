@@ -1,0 +1,43 @@
+http://localhost:8080/user/get/0
+
+
+{
+    "userId": 0,
+    "phoneNumber": "9674350488",
+    "firstName": "admin",
+    "userTypeId": 0,
+    "emailId": "dairymartbussinessmail@gmail.com",
+    "addressId": 0,
+    "createdBy": 0,
+    "createdOn": "2024-10-16",
+    "lastUpdated": "2024-10-16",
+    "crateCount": 0,
+    "type": {
+        "userTypeId": 0,
+        "userTypeDesc": "admin",
+        "isActive": true,
+        "createOn": "Oct 16, 2024",
+        "createBy": 0
+    },
+    "address": {
+        "addressId": 0,
+        "fullAddress": "Sample Test Address",
+        "cityId": 0,
+        "city": {
+            "cityId": 0,
+            "cityName": "Haldwani",
+            "stateId": 0,
+            "state": {
+                "stateId": 0,
+                "stateName": "Uttarakhand",
+                "countryId": 0,
+                "country": {
+                    "countryId": 0,
+                    "countryName": "India"
+                }
+            }
+        }
+    },
+    "isActive": true,
+    "password": "{noop}admin"
+}

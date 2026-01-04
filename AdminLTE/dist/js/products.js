@@ -45,7 +45,7 @@ function searchTable() {
 }
 
 async function loadProducts() {
-  const url = "http://localhost:8080/product/get"; 
+  const url = "http://localhost:8080/product/getall"; 
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error("Failed to fetch products");
