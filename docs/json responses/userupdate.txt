@@ -1,0 +1,16 @@
+POST http://localhost:8080/user/update
+
+send json body like below:
+
+
+{
+    "userId": 5,
+    "firstName": "Prashant1",
+    "lastName": "gautam",
+    "phoneNumber": "9674350482",
+    "userTypeId": 2,
+    "emailId": "akg.bitsoni@gmail.com",
+    "addressId": 1,
+    "password": "admin",
+    "isActive": true
+}
