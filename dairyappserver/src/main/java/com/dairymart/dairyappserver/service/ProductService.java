@@ -5,6 +5,7 @@ import com.dairymart.dairyappserver.dao.UserDao;
 import com.dairymart.dairyappserver.dto.ProductDTO;
 import com.dairymart.dairyappserver.dto.UserDTO;
 import com.dairymart.dairyappserver.repository.ProductRepository;
+import com.dairymart.dairyappserver.repository.ProductTypeRepository;
 import com.dairymart.dairyappserver.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

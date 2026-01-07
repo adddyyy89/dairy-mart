@@ -1,4 +1,29 @@
 let originalData = {};
+let productTypes = [];
+
+async function loadProductTypeData() {
+
+    try {
+        const response = await fetch(`http://localhost:8080/product/producttype/getall`);
+        if (!response.ok) throw new Error("Product types not found");
+        
+        const data = await response.json();
+        productTypes = data; 
+        const productTypeField = document.getElementById("productTypeId");
+        productTypeField.innerHTML = "";
+
+        productTypes.forEach(productType => {
+      // Map JSON keys to your table columns
+      const row = `
+        <option value="">Select Type</option>
+      `;
+      tbody.innerHTML += row;
+
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Could not load product details.");
+    }
+}
 
 async function loadProductData() {
     const params = new URLSearchParams(window.location.search);

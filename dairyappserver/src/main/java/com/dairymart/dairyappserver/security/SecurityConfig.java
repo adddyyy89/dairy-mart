@@ -48,7 +48,8 @@ public class SecurityConfig {
                                 "/admin/users/get",
                                 "/admin/ledgers/get",
                                 "/product/get/*",
-                                "/product/getall").permitAll()
+                                "/product/getall",
+                                "/product/producttype/getall").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
 
