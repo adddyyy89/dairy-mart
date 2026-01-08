@@ -18,7 +18,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     if(loginData.phoneNumber === dummy_user.phoneNumber && loginData.password === dummy_user.password){
         const dummyUser = {
             phoneNumber: loginData.phoneNumber,
-            name:'Admin User',
+            name:'Admin Kumar',
             isActive: true
         }
 
