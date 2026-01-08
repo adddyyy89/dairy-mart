@@ -39,12 +39,17 @@
   <!--end::Third Party Plugin(Bootstrap Icons)-->
   <!--begin::Required Plugin(AdminLTE)-->
   <link rel="stylesheet" href="../css/adminlte.css" />
+  <style>
+    .filter-container { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .table-container { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+  </style>
   <!--end::Required Plugin(AdminLTE)-->
 </head>
 <!--end::Head-->
 <!--begin::Body-->
 
 <body class="layout-fixed sidebar-expand-lg sidebar-open bg-body-tertiary">
+  <script src="../js/auth.js"></script>
   <!--begin::App Wrapper-->
   <div class="app-wrapper">
     <!--begin::Header-->
@@ -289,11 +294,6 @@
                       <p>Products</p>
                     </a>
                   </li>
-              
-              
-              
-              
-              
             </ul>
             <!--end::Sidebar Menu-->
           </nav>
@@ -310,12 +310,12 @@
           <!--begin::Row-->
           <div class="row">
             <div class="col-sm-6">
-              <h3 class="mb-0">Users</h3>
+              <h3 class="mb-0">Orders</h3>
             </div>
             <div class="col-sm-6">
               <ol class="breadcrumb float-sm-end">
                 <li class="breadcrumb-item"><a href="#">Home</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Users</li>
+                <li class="breadcrumb-item active" aria-current="page">Orders</li>
               </ol>
             </div>
           </div>
@@ -328,78 +328,89 @@
       <div class="app-content">
         <!--begin::Container-->
         <div class="container-fluid">
-          <div class="container py-5">
-            <div class="card shadow">
-              <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Product Details</h4>
-                <button id="editBtn" class="btn btn-outline-primary" onclick="toggleEditMode()">Edit Product</button>
-              </div>
-              <div class="card-body">
-                <form id="productForm">
-                  <div class="row g-3">
-                    <div class="row mb-4">
-                      <div class="col-12 text-center">
-                        <img id="productImagePreview" src="" alt="Product Image" class="img-thumbnail"
-                          style="max-height: 200px;">
-                      </div>
-                    </div>
-
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">Category (Type)</label>
-                      <input type="text" id="productTypeName" class="form-control editable-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">Brand Name</label>
-                      <input type="text" id="brandName" class="form-control editable-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">Product ID</label>
-                      <input type="text" name="productId" id="productId" class="form-control editable-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">HSN</label>
-                      <input type="text" name="hsn" id="hsn" class="form-control editable-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">Product Name</label>
-                      <input type="text" name="productName" id="productName" class="form-control editable-field"
-                        readonly>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">Short Name</label>
-                      <input type="text" name="productShortName" id="productShortName"
-                        class="form-control editable-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">Purchase Rate</label>
-                      <input type="text" name="productPurchaseRate" id="productPurchaseRate"
-                        class="form-control editable-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">MRP</label>
-                      <input type="text" name="mrp" id="mrp" class="form-control editable-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">Brand ID</label>
-                      <input type="number" name="brandId" id="brandId" class="form-control editable-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-muted small">Unit</label>
-                      <input type="text" name="unit" id="unit" class="form-control editable-field" readonly>
-                    </div>
-                  </div>
-
-                  <div id="actionButtons" class="mt-4 d-none">
-                    <hr>
-                    <div class="d-flex justify-content-end gap-2">
-                      <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
-                      <button type="submit" class="btn btn-success">Save Changes</button>
-                    </div>
-                  </div>
-                </form>
-              </div>
+          <div class="filter-container">
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                <div class="btn-group" role="group" aria-label="Filter Options">
+                    <button type="button" class="btn btn-primary" onclick="filterTable('Show All')">Show All</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="filterTable('Today')">Today</button>
+                </div>
             </div>
-          </div>
+            
+            <div class="col">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search by name or email..." onkeyup="searchTable()">
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container bg-white">
+        <table class="table table-hover mb-0" id="orderTable">
+            <thead class="table-dark">
+                <tr class="clickable-row">
+                    <th>Order Id</th>
+                    <th>Order Date</th>
+                    <th>Retailer Id</th>
+                    <th>Retailer Name</th>
+                    <th>Branch Id</th>
+                    <th>Created By</th>
+                    <th>Created On</th>
+                    <th>Order Status</th>
+                    <th>Salesman Id</th>
+                    <th>Salesman Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="clickable-row">
+                    <td>John Doe</td>
+                    <td>2026-01-03</td>
+                    <td>+1 234 567 890</td>
+                    <td>john@retail.com</td>
+                    <td>123 Market St, NY</td>
+                    <td>123 Market St, NY</td>
+                    <td>123 Market St, NY</td>
+                    <td>123 Market St, NY</td>
+                    <td><span class="badge bg-info text-dark">PENDING</span></td>
+                    <td>123 Market St, NY</td>
+                </tr>
+                <tr class="clickable-row">
+                    <td>Sarah Smith</td>
+                    <td>2026-01-02</td>
+                    <td>+1 987 654 321</td>
+                    <td>sarah@sales.com</td>
+                    <td>456 Business Ave, CA</td>
+                    <td>123 Market St, NY</td>
+                    <td>123 Market St, NY</td>
+                    <td>123 Market St, NY</td>
+                    <td><span class="badge bg-info text-dark">PENDING</span></td>
+                    <td>123 Market St, NY</td>
+                </tr>
+                <tr class="clickable-row">
+                    <td>Mike Admin</td>
+                    <td>2026-01-01</td>
+                    <td>+1 555 012 345</td>
+                    <td>mike@system.com</td>
+                    <td>Headquarters, TX</td>
+                    <td>123 Market St, NY</td>
+                    <td>123 Market St, NY</td>
+                    <td>123 Market St, NY</td>
+                    <td><span class="badge bg-info text-dark">PENDING</span></td>
+                    <td>123 Market St, NY</td>
+                </tr>
+                <tr class="clickable-row">
+                    <td>Alex Wong</td>
+                    <td>2026-01-03</td>
+                    <td>+1 444 222 333</td>
+                    <td>alex@shop.com</td>
+                    <td>789 Plaza Rd, WA</td>
+                    <td>123 Market St, NY</td>
+                    <td>123 Market St, NY</td>
+                    <td>123 Market St, NY</td>
+                    <td><span class="badge bg-info text-dark">PENDING</span></td>
+                    <td>123 Market St, NY</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
         </div>
         <!--end::Container-->
       </div>
@@ -433,7 +444,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
   <!--end::Required Plugin(Bootstrap 5)--><!--begin::Required Plugin(AdminLTE)-->
   <script src="../js/adminlte.js"></script>
-  <script src="../js/productdetails.js"></script>
+  <script src="../js/orders.js"></script>
   <!--end::Required Plugin(AdminLTE)--><!--begin::OverlayScrollbars Configure-->
   <script>
     const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';

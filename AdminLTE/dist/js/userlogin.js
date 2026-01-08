@@ -1,3 +1,9 @@
+// login using dummy data, REMOVE BEFORE PRODUCTION
+const dummy_user = {
+    phoneNumber: '1234567890' ,
+    password: 'admin'
+}
+
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const alertDiv = document.getElementById('alertMessage');
@@ -6,6 +12,31 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         phoneNumber: document.getElementById('phoneNumber').value,
         password: document.getElementById('loginPassword').value
     }
+
+    // login using dummy data, REMOVE BEFORE PRODUCTION
+
+    if(loginData.phoneNumber === dummy_user.phoneNumber && loginData.password === dummy_user.password){
+        const dummyUser = {
+            phoneNumber: loginData.phoneNumber,
+            name:'Admin User',
+            isActive: true
+        }
+
+        sessionStorage.setItem('isLoggedIn','true');
+        sessionStorage.setItem('user',JSON.stringify(dummyUser));
+
+        alertDiv.className = 'alert alert-success mt-3';
+        alertDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i> Login successful! Redirecting...';
+        alertDiv.style.display = 'block';
+
+        setTimeout(() => {
+            window.location.href='./home.html';
+        },1500);
+
+        return;
+    }
+
+    // Check from database
 
     try{
         const response = await fetch('http://localhost:8080/auth/login', {
@@ -47,3 +78,4 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     }
     
 });
+
