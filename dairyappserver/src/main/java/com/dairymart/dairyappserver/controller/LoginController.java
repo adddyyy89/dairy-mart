@@ -15,10 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
 
@@ -35,6 +32,7 @@ public class LoginController {
     Logger logger = LoggerFactory.getLogger(LoginController.class);
     private static final Gson gson = new Gson();
 
+    @CrossOrigin("*")
     @PostMapping(value="/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> login(@RequestBody UserLoginDTO dto) {
         logger.info("login called using phone: " + dto.getPhoneNumber());
@@ -72,6 +70,7 @@ public class LoginController {
 
     }
 
+    @CrossOrigin("*")
     @PostMapping(value = "/logout", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> logout(@RequestBody UserLoginDTO dto) {
         logger.info("logout called using phone: {}", dto.getPhoneNumber());
