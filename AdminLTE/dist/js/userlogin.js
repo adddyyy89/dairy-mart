@@ -58,8 +58,9 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
         if(responseData.isActive){
             localStorage.setItem('user',JSON.stringify(responseData))
-
-            window.location.href = '../home.html'
+            sessionStorage.setItem('isLoggedIn','true');
+            sessionStorage.setItem('user',JSON.stringify(responseData));
+            window.location.href = './home.html'
         }else{
             alertDiv.className = 'alert alert-danger mt-3';
             alertDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i> Incorrect Credentials';

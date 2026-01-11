@@ -15,10 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
 
@@ -35,6 +32,7 @@ public class LoginController {
     Logger logger = LoggerFactory.getLogger(LoginController.class);
     private static final Gson gson = new Gson();
 
+    @CrossOrigin("*")
     @PostMapping(value="/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> login(@RequestBody UserLoginDTO dto) {
         logger.info("login called using phone: " + dto.getPhoneNumber());
@@ -60,7 +58,9 @@ public class LoginController {
         UserLoginDao loggedInDao = loginSvc.isLoggedIn(new UserLoginDao(dto));
         if(loggedInDao != null) {
             logger.error("User tried to login using phone: {} but is already logged in!!", dto.getPhoneNumber());
-            return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new UserLoginDTO(loggedInDao)));
+            UserLoginDTO userLoginDTO = new UserLoginDTO(loggedInDao);
+            userLoginDTO.setPassword(dao.getPassword().replaceAll("\\{noop}", ""));
+            return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(userLoginDTO));
 
         }
 
@@ -68,10 +68,13 @@ public class LoginController {
         UserLoginDao loginDao = loginSvc.login(new UserLoginDao(dto));
         logger.info("Login successful for phoneNumber: {}", dto.getPhoneNumber());
 
-        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new UserLoginDTO(loginDao)));
+        UserLoginDTO userLoginDTO = new UserLoginDTO(loginDao);
+        userLoginDTO.setPassword(dao.getPassword().replaceAll("\\{noop}", ""));
+        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(userLoginDTO));
 
     }
 
+    @CrossOrigin("*")
     @PostMapping(value = "/logout", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> logout(@RequestBody UserLoginDTO dto) {
         logger.info("logout called using phone: {}", dto.getPhoneNumber());

@@ -1,19 +1,25 @@
 // immediate auth check 
 
-(function() {
+(function () {
     const isLoginPage = window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/');
 
-    if(!isLoginPage){
-        if (sessionStorage.getItem('isLoggedIn') !== 'true'){
-        window.location.href = '/';
+    if (!isLoginPage) {
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = '/';
+        }
+
     }
+    else {
+        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            window.location.href = './home.html';
+        }
     }
-    
+
 }())
 
 //logout function
 
-function logout(){
+function logout() {
     sessionStorage.removeItem('isLoggedIn');
     sessionStorage.removeItem('user');
     const basePath = window.APP_BASE_PATH || './';
@@ -25,9 +31,9 @@ window.logout = logout;
 
 //getting userdata
 
-function getUser(){
+function getUser() {
     const userData = sessionStorage.getItem('user');
-    if(userData){
+    if (userData) {
         return JSON.parse(userData);
 
     }

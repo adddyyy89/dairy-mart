@@ -1,10 +1,13 @@
 package com.dairymart.dairyappserver.controller;
 
 import com.dairymart.dairyappserver.dao.ProductDao;
+import com.dairymart.dairyappserver.dao.ProductTypeDao;
 import com.dairymart.dairyappserver.dao.UserDao;
 import com.dairymart.dairyappserver.dto.ProductDTO;
+import com.dairymart.dairyappserver.dto.ProductTypeDTO;
 import com.dairymart.dairyappserver.dto.UserDTO;
 import com.dairymart.dairyappserver.service.ProductService;
+import com.dairymart.dairyappserver.service.ProductTypeService;
 import com.dairymart.dairyappserver.service.UserService;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/product")
 public class ProductController {
@@ -28,6 +32,10 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
+    @Autowired
+    private ProductTypeService productTypeService;
+
+    @CrossOrigin("*")
     @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> addProduct(@RequestBody ProductDTO productDto) {
         logger.info("add product called.");
@@ -76,6 +84,7 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(productDTO));
     }
 
+    @CrossOrigin("*")
     @GetMapping(value = "/get/producttype/{productTypeId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getUsersByType(@PathVariable String productTypeId) {
         logger.info("getProductsByType called with productTypeId: {}", productTypeId);
@@ -106,6 +115,7 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(dtoList));
     }
 
+    @CrossOrigin("*")
     @PostMapping(value = "/update", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> updateProduct(@RequestBody ProductDTO productDTO) {
         logger.info("update product called: {}", productDTO.getProductId());
@@ -144,6 +154,27 @@ public class ProductController {
         }
 
         logger.info("Product retrieved = {}", dtoList.size());
+        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(dtoList));
+    }
+
+
+    @CrossOrigin("*")
+    @GetMapping(value = "/producttype/getall", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getAllProductTypes() {
+        logger.info("get all product types called");
+
+        List<ProductTypeDao> productTypeDaos = productTypeService.getAllProductTypes();
+        List<ProductTypeDTO> dtoList = new ArrayList<>(productTypeDaos.size());
+        for(ProductTypeDao productDao : productTypeDaos) {
+            dtoList.add(new ProductTypeDTO(productDao));
+        }
+
+        if(dtoList.isEmpty()) {
+            logger.info("No Products Type found");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Product Type not found");
+        }
+
+        logger.info("Product Types retrieved = {}", dtoList.size());
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(dtoList));
     }
 
