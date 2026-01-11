@@ -128,9 +128,21 @@
                   
                   <div class="row mb-3">
                     <div class="col-md-6">
-                      <label for="cityId" class="form-label">City ID</label>
-                      <input type="number" class="form-control" id="cityId" name="cityId" value="0">
+                      <label for="stateDropdown" class="form-label">State</label>
+                      <select id="stateDropdown" class="form-control" name="stateId" onchange="fetchCities()">
+                        <option value="">-- Loading States... --</option>
+                      </select>
                     </div>
+                    <div class="col-md-6">
+                      <label for="cityDropdown" class="form-label">City</label>
+                      <select id="cityDropdown" class="form-control" name="cityId">
+                        <option value="">-- Loading Cities... --</option>
+                      </select>
+                    </div>
+                  </div>
+
+
+                  <div class="row mb-3">
                     <div class="col-md-6">
                       <label class="form-label">Status</label>
                       <div class="form-check form-switch mt-2">

@@ -35,6 +35,7 @@ public class AddressController {
     @Autowired
     private CityService cityService;
 
+    @CrossOrigin("*")
     @GetMapping(value = "/state/get/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getAllStates() {
         logger.info("Get all states service called.");
@@ -49,22 +50,25 @@ public class AddressController {
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(stateDTOS));
     }
 
-    @GetMapping(value = "/city/getbystate")
-    public ResponseEntity<String> getCitiesByState(@RequestBody StateDTO stateDTO) {
+    @CrossOrigin("*")
+    @GetMapping(value = "/city/getbystate/{stateId}")
+    public ResponseEntity<String> getCitiesByState(@PathVariable String stateId) {
         logger.info("Get cities by state service called.");
 
-        if(stateDTO.getStateId() < 0) {
+        int stateIdCode = Integer.parseInt(stateId);
+
+        if(stateIdCode < 0) {
             logger.error("Invalid state id provided!");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(gson.toJson("Invalid state id provided."));
         }
 
-        List<CityDao> cities = cityService.getCitiesForState(stateDTO.getStateId());
+        List<CityDao> cities = cityService.getCitiesForState(stateIdCode);
         List<CityDTO> cityDTOS = new ArrayList<>();
         for(CityDao city : cities) {
             cityDTOS.add(new CityDTO(city));
         }
 
-        logger.info("Get cities by state service completed. Total cities fetched for state id: {} are {}", stateDTO.getStateId(), cityDTOS.size());
+        logger.info("Get cities by state service completed. Total cities fetched for state id: {} are {}", stateIdCode, cityDTOS.size());
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(cityDTOS));
     }
 

@@ -41,7 +41,7 @@ public class UserController {
     @Autowired
     private CrateService crateService;
 
-
+    @CrossOrigin("*")
     @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> addUser(@RequestBody UserDTO userDto) {
         logger.info("add user called.");
@@ -95,6 +95,7 @@ public class UserController {
 
     }
 
+    @CrossOrigin("*")
     @PostMapping(value = "/add/admin", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> addAdminUser(@RequestBody UserDTO userDTO) {
         if(userDTO == null) {
@@ -112,6 +113,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User Details are not correct");
     }
 
+    @CrossOrigin("*")
     @GetMapping(value = "/get/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getUser(@PathVariable String userId) {
         logger.info("getUser called with userId: {}", userId);
@@ -140,6 +142,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(userDTO));
     }
 
+    @CrossOrigin("*")
     @GetMapping(value = "/get/usertype/{userTypeId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getUsersByType(@PathVariable String userTypeId) {
         logger.info("getUsersByType called with userTypeId: {}", userTypeId);
@@ -170,7 +173,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(dtoList));
     }
 
-
+    @CrossOrigin("*")
     @PostMapping(value = "/update", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> updateUser(@RequestBody UserDTO userDTO) {
         logger.info("update user called: {}", userDTO.getUserId());
@@ -192,6 +195,7 @@ public class UserController {
 
     }
 
+    @CrossOrigin("*")
     @GetMapping(value = "/get/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getUser() {
         logger.info("get All User called");

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/product")
 public class ProductController {
@@ -34,6 +35,7 @@ public class ProductController {
     @Autowired
     private ProductTypeService productTypeService;
 
+    @CrossOrigin("*")
     @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> addProduct(@RequestBody ProductDTO productDto) {
         logger.info("add product called.");
@@ -82,6 +84,7 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(productDTO));
     }
 
+    @CrossOrigin("*")
     @GetMapping(value = "/get/producttype/{productTypeId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getUsersByType(@PathVariable String productTypeId) {
         logger.info("getProductsByType called with productTypeId: {}", productTypeId);
@@ -112,6 +115,7 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(dtoList));
     }
 
+    @CrossOrigin("*")
     @PostMapping(value = "/update", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> updateProduct(@RequestBody ProductDTO productDTO) {
         logger.info("update product called: {}", productDTO.getProductId());

@@ -58,7 +58,9 @@ public class LoginController {
         UserLoginDao loggedInDao = loginSvc.isLoggedIn(new UserLoginDao(dto));
         if(loggedInDao != null) {
             logger.error("User tried to login using phone: {} but is already logged in!!", dto.getPhoneNumber());
-            return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new UserLoginDTO(loggedInDao)));
+            UserLoginDTO userLoginDTO = new UserLoginDTO(loggedInDao);
+            userLoginDTO.setPassword(dao.getPassword().replaceAll("\\{noop}", ""));
+            return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(userLoginDTO));
 
         }
 
@@ -66,7 +68,9 @@ public class LoginController {
         UserLoginDao loginDao = loginSvc.login(new UserLoginDao(dto));
         logger.info("Login successful for phoneNumber: {}", dto.getPhoneNumber());
 
-        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new UserLoginDTO(loginDao)));
+        UserLoginDTO userLoginDTO = new UserLoginDTO(loginDao);
+        userLoginDTO.setPassword(dao.getPassword().replaceAll("\\{noop}", ""));
+        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(userLoginDTO));
 
     }
 
