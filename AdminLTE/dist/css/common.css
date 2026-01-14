@@ -1,0 +1,5 @@
+.disabled-row {
+    opacity: 0.5;              /* Fades the row */
+    background-color: #f8f9fa; /* Optional: light gray background */
+    user-select: none;         /* Prevents text selection */
+}

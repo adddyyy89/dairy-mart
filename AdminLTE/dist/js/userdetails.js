@@ -91,6 +91,10 @@ function populateForm(data) {
     if (data.type) {
         document.getElementById('userTypeId').value = data.type.userTypeId ?? "";
     }
+    if(!data.isActive) {
+        document.getElementById('isActive').checked = false;
+    }
+     
 
     // 3. Address Field
     if (data.address) {
@@ -121,9 +125,6 @@ function toggleEditMode() {
         if (!protectedIds.includes(input.id)) {
             input.readOnly = false;
             input.classList.add('border');
-        }
-        else {
-            input.disabled = true;
         }
 
         if (input.id === 'userTypeId') {
