@@ -87,6 +87,8 @@ document.getElementById('addUserForm').addEventListener('submit', async function
     }
   };
 
+  console.log(newUserData);
+
   try {
     const sessionString = sessionStorage.getItem('user');
     const userData = JSON.parse(sessionString);
@@ -99,9 +101,6 @@ document.getElementById('addUserForm').addEventListener('submit', async function
         'Content-Type': 'application/json',
         // Add the Authorization header here
         'Authorization': `Basic ${encodedCredentials}`
-      },
-      headers: {
-        'Content-Type': 'application/json'
       },
       body: JSON.stringify(newUserData)
     });
