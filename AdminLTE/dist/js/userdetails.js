@@ -1,6 +1,6 @@
 let originalData = {};
 
-let dummyUserData = 
+let dummyUserData =
 {
     "userId": 0,
     "phoneNumber": "9674350488",
@@ -45,26 +45,37 @@ let dummyUserData =
 }
 
 async function loadUserData() {
-    /*
+
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    
+
     try {
-        const response = await fetch(`http://localhost:8080/user/get/${id}`);
+        const sessionString = sessionStorage.getItem('user');
+        const userData = JSON.parse(sessionString);
+        const username = userData.phoneNumber;
+        const password = userData.password;
+        const encodedCredentials = btoa(`${username}:${password}`);
+        const response = await fetch(`http://localhost:8080/user/get/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // Add the Authorization header here
+                'Authorization': `Basic ${encodedCredentials}`
+            }
+        });
         if (!response.ok) throw new Error("User not found");
-        
+
         const data = await response.json();
-        originalData = data; 
+        originalData = data;
         populateForm(data);
     } catch (error) {
         console.error("Error:", error);
         alert("Could not load user details.");
     }
-    */
-    
+
     // dummy data for now
-    originalData = dummyUserData;
-    populateForm(dummyUserData);
+    //originalData = dummyUserData;
+    //populateForm(dummyUserData);
 }
 
 
@@ -85,13 +96,13 @@ function populateForm(data) {
     if (data.address) {
         document.getElementById('fullAddress').value = data.address.fullAddress ?? "";
         document.getElementById('pinCode').value = data.address.pinCode ?? "";
-        
+
         if (data.address.city) {
             document.getElementById('city').value = data.address.city.cityName ?? "";
-            
+
             if (data.address.city.state) {
                 document.getElementById('state').value = data.address.city.state.stateName ?? "";
-                
+
                 if (data.address.city.state.country) {
                     document.getElementById('country').value = data.address.city.state.country.countryName ?? "";
                 }
@@ -117,7 +128,7 @@ function toggleEditMode() {
 
 function cancelEdit() {
     // 1. Re-populate the form with the original data stored during load
-    populateForm(originalData); 
+    populateForm(originalData);
 
     // 2. Select all editable fields
     const inputs = document.querySelectorAll('.editable-field');
@@ -133,7 +144,7 @@ function cancelEdit() {
     // 4. Toggle button visibility
     editBtn.classList.remove('d-none');     // Show "Edit" button
     actionButtons.classList.add('d-none');  // Hide "Save/Cancel" buttons
-    
+
     // 5. Optional: Scroll to the top of the card so the user sees the reset
     document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
 }
@@ -141,7 +152,7 @@ function cancelEdit() {
 // SAVE CHANGES
 document.getElementById('productForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const formData = new FormData(e.target);
     const updatedData = Object.fromEntries(formData.entries());
 
@@ -168,10 +179,10 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
             userTypeDesc: updatedData.userType
         }
     };
-    
+
     console.log('Updated user data:', userPayload);
     alert('User updated successfully!');
-    
+
     // go back to view mode
     const inputs = document.querySelectorAll('.editable-field');
     inputs.forEach(input => {
@@ -180,7 +191,7 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     });
     document.getElementById('editBtn').classList.remove('d-none');
     document.getElementById('actionButtons').classList.add('d-none');
-    
+
     /*
     try {
         const response = await fetch('http://localhost:8080/user/update', {
