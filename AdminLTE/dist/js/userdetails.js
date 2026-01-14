@@ -89,13 +89,12 @@ function populateForm(data) {
 
     // 2. User Type
     if (data.type) {
-        document.getElementById('userType').value = data.type.userTypeDesc ?? "";
+        document.getElementById('userTypeId').value = data.type.userTypeId ?? "";
     }
 
     // 3. Address Field
     if (data.address) {
         document.getElementById('fullAddress').value = data.address.fullAddress ?? "";
-        document.getElementById('pinCode').value = data.address.pinCode ?? "";
 
         if (data.address.city) {
             document.getElementById('city').value = data.address.city.cityName ?? "";
@@ -116,10 +115,19 @@ function toggleEditMode() {
     const inputs = document.querySelectorAll('.editable-field');
     // We don't want to edit IDs or internal names usually, but for this demo:
     inputs.forEach(input => {
-        // Exclude productId from being edited if desired
-        if (input.id !== 'userId') {
+        // List of IDs that should remain ReadOnly
+        const protectedIds = ['userId', 'fullAddress', 'city', 'state', 'country'];
+
+        if (!protectedIds.includes(input.id)) {
             input.readOnly = false;
             input.classList.add('border');
+        }
+        else {
+            input.disabled = true;
+        }
+
+        if (input.id === 'userTypeId') {
+            input.disabled = false;
         }
     });
     document.getElementById('editBtn').classList.add('d-none');
@@ -162,26 +170,13 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
         lastName: updatedData.lastName,
         emailId: updatedData.emailId,
         phoneNumber: updatedData.phoneNumber,
-        address: {
-            fullAddress: updatedData.fullAddress,
-            pinCode: updatedData.pinCode,
-            city: {
-                cityName: updatedData.city,
-                state: {
-                    stateName: updatedData.state,
-                    country: {
-                        countryName: updatedData.country
-                    }
-                }
-            }
-        },
-        type: {
-            userTypeDesc: updatedData.userType
-        }
+        userTypeId: updatedData.userTypeId,
+        addressId: originalData.address.addressId,
+        password: originalData.password,
+        isActive: document.getElementById('isActive').checked
     };
 
     console.log('Updated user data:', userPayload);
-    alert('User updated successfully!');
 
     // go back to view mode
     const inputs = document.querySelectorAll('.editable-field');
@@ -192,16 +187,24 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     document.getElementById('editBtn').classList.remove('d-none');
     document.getElementById('actionButtons').classList.add('d-none');
 
-    /*
+
     try {
-        const response = await fetch('http://localhost:8080/user/update', {
+        const sessionString = sessionStorage.getItem('user');
+        const userData = JSON.parse(sessionString);
+        const username = userData.phoneNumber;
+        const password = userData.password;
+        const encodedCredentials = btoa(`${username}:${password}`);
+
+        const response = await fetch(`http://localhost:8080/user/update`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${encodedCredentials}`
+            },
             body: JSON.stringify(userPayload)
         });
 
         if (response.ok) {
-            alert('User updated successfully!');
             location.reload();
         } else {
             alert('Update failed.');
@@ -209,7 +212,7 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     } catch (error) {
         console.error('Error:', error);
     }
-    */
+
 });
 
 window.onload = loadUserData;
