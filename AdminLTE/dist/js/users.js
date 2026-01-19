@@ -59,7 +59,9 @@ async function getData() {
     tableBody.innerHTML = "";
 
     json.map.users.myArrayList.forEach(user => {
-      const row = `
+        let row = ``;
+        if(user.map.active) {
+            row = `
         <tr class="clickable-row">
                     <td><a href="userdetails.html?id=${user.map.userId}" 
                class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">${user.map.firstName}</a></td>
@@ -69,6 +71,19 @@ async function getData() {
                     <td>${user.map.address.map.fullAddress}</td>
                 </tr>
       `;
+        }
+        else {
+            row = `
+        <tr class="clickable-row disabled-row">
+                    <td><a href="userdetails.html?id=${user.map.userId}" 
+               class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">${user.map.firstName}</a></td>
+                    <td><span class="badge bg-info text-dark">${user.map.type.map.userTypeDesc}</span></td>
+                    <td>${user.map.phoneNumber}</td>
+                    <td>${user.map.emailId}</td>
+                    <td>${user.map.address.map.fullAddress}</td>
+                </tr>
+      `;
+        }
       
       // Append the row to the table
       tableBody.innerHTML += row;
