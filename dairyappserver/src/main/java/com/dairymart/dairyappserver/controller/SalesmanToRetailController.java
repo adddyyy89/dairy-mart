@@ -67,6 +67,7 @@ public class SalesmanToRetailController {
 
     }
 
+    @CrossOrigin("*")
     @GetMapping(value = "/get/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getAllSalesmanToRetail() {
         logger.info("Get all salesman to retail details called.");

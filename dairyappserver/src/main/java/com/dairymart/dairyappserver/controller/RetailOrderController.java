@@ -51,6 +51,7 @@ public class RetailOrderController {
 
     }
 
+    @CrossOrigin("*")
     @GetMapping(value = "/get/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getAllRetailOrders() {
         logger.info("Get all retail orders called.");
@@ -61,6 +62,33 @@ public class RetailOrderController {
             dtoList.add(new RetailOrderDTO(dao));
         }
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(dtoList));
+    }
+
+    @CrossOrigin("*")
+    @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getRetailOrderByOrderId(@PathVariable String id) {
+        logger.info("Get order details for order id = " + id);
+        Integer orderId = Integer.parseInt(id);
+        List<RetailOrderDao> retailOrderDaos = retailOrderService.getAllOrders();
+        RetailOrderDao orderDao = null;
+        for(RetailOrderDao retailOrderDao : retailOrderDaos) {
+            if(retailOrderDao.getOrderId() == orderId) {
+                orderDao = retailOrderDao;
+                break;
+            }
+        }
+
+        if(orderDao == null) {
+            logger.error("Order does not exist!");
+        }
+
+        else {
+            logger.info("Order found!!");
+            return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new RetailOrderDTO(orderDao)));
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Order not found");
+
     }
 
     @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
