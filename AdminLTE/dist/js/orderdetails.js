@@ -47,19 +47,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function renderOrderData(data) {
+    
+    const retailerSalesmanDataMap = sessionStorage.getItem("retailerSalesmanDataMap");
+    const retailerSalesmanDataMapJSON = JSON.parse(retailerSalesmanDataMap);
+    const salesmanId = retailerSalesmanDataMapJSON[data.retailerId].userId;
+    const salesmanName = retailerSalesmanDataMapJSON[data.retailerId].firstName + " " + retailerSalesmanDataMapJSON[data.retailerId].lastName;
+
+
     // Helper function to update text safely
     const updateText = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.textContent = val;
     };
-    
+
     // Map top-level details
     document.getElementById('orderId').textContent = data.orderId;
     document.getElementById('orderDate').textContent = data.orderDate;
     document.getElementById('statusDesc').innerHTML = `<span class="badge bg-success">${data.status.statusDesc}</span>`;
     document.getElementById('branchName').textContent = data.branch.branchName;
-    document.getElementById('retailerName').textContent = data.retailer.shopName;
+    document.getElementById('retailerName').innerHTML = `<a href="userdetails.html?id=${data.retailer.owner.userId}">` + data.retailer.shopName;
     document.getElementById('retailerAddress').textContent = data.retailer.address.fullAddress;
+    document.getElementById('salesmanName').innerHTML = `<a href="userdetails.html?id=${salesmanId}">` + salesmanName;
 
     // Map Table Rows
     const tableBody = document.getElementById('orderItemsTable');
