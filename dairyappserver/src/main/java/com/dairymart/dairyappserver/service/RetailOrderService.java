@@ -10,6 +10,7 @@ import com.dairymart.dairyappserver.repository.ProductRepository;
 import com.dairymart.dairyappserver.repository.RetailOrderDetailsRepository;
 import com.dairymart.dairyappserver.repository.RetailOrderRepository;
 import com.dairymart.dairyappserver.util.DateUtil;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +66,34 @@ public class RetailOrderService {
         }
 
         logger.info("Retail order details entry are completed successfully.");
+
+        return findById(savedOrderDao.getOrderId());
+    }
+
+    @Transactional
+    public RetailOrderDao updateOrder(RetailOrderDTO order) {
+
+        RetailOrderDao orderDao = new RetailOrderDao(order);
+        orderDao.setCreatedon(new Date(System.currentTimeMillis()));
+        orderDao.setLastUpdated(new Date(System.currentTimeMillis()));
+        orderDao.setOrderDate(new Date(System.currentTimeMillis()));
+        orderDao.setOrderId(order.getOrderId());
+
+        // Save Initial Order
+        RetailOrderDao savedOrderDao = retailOrderRepository.save(orderDao);
+
+        logger.info("Retail order update entry created with order Id: {}", savedOrderDao.getOrderId());
+        logger.info("Proceeding with entries for order details..");
+
+        // Save order details one at a time
+        for(RetailOrderDetailsDTO dto : order.getOrderDetails()) {
+            dto.setLastUpdated(new Date(System.currentTimeMillis()));
+            dto.setOrderId(savedOrderDao.getOrderId());
+            retailOrderDetailsRepository.save(new RetailOrderDetailsDao(dto));
+            logger.info("Update entry for order Id: {}, product code: {}", dto.getOrderId(), dto.getProductCode());
+        }
+
+        logger.info("Retail order details updated successfully.");
 
         return findById(savedOrderDao.getOrderId());
     }
