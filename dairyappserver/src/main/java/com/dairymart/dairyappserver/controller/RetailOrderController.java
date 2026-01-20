@@ -115,6 +115,11 @@ public class RetailOrderController {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(gson.toJson("error"));
     }*/
 
+    /**
+     * Returns all orders by Salesman Id
+     * @param id
+     * @return
+     */
     @GetMapping(value = "/get/salesman/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getOrdersBySalesmanId(@PathVariable String id) {
         logger.info("Get orders for salesman id : {} called.", id);
@@ -152,6 +157,18 @@ public class RetailOrderController {
         }
         logger.info("Fetched orders for retailer : {}, Total Orders: {}", id, retailOrderDTOS.size());
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(retailOrderDTOS));
+    }
+
+    @PostMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> updateRetailOrder(@RequestBody RetailOrderDTO retailOrder) {
+        logger.info("update retail order called. Order = {}", retailOrder);
+
+        RetailOrderDao retailOrderDao = retailOrderService.updateOrder(retailOrder);
+
+        logger.info("update retail order call is completed successfully.");
+
+        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new RetailOrderDTO(retailOrderDao)));
+
     }
 
 }
