@@ -1,15 +1,53 @@
-/**
- * mappingHandler.js
- * Logic to read sessionStorage and populate UI components
- */
+let retailers = [];
+let salesmans = [];
 
-document.addEventListener('DOMContentLoaded', () => {
-    populatePageFromSession();
+document.addEventListener('DOMContentLoaded', async () => {
+    const sessionString = sessionStorage.getItem('user');
+    if (!sessionString) return;
+
+    const userData = JSON.parse(sessionString);
+    const encodedCredentials = btoa(`${userData.phoneNumber}:${userData.password}`);
+
+    // Use Promise.all to fetch both lists in parallel and WAIT for them
+    try {
+        const [retailerData, salesmanData] = await Promise.all([
+            getUsersByType(3, encodedCredentials),
+            getUsersByType(2, encodedCredentials)
+        ]);
+
+        retailers = retailerData;
+        salesmans = salesmanData;
+
+        // Only populate the page AFTER data is received
+        populatePageFromSession();
+    } catch (error) {
+        console.error("Initialization failed:", error);
+    }
 });
 
+// Added 'async' and 'await' here
+async function getUsersByType(userType, encodedCredentials) {
+    try {
+        const response = await fetch('http://localhost:8080/user/get/usertype/' + userType, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${encodedCredentials}`
+            }
+        });
+
+        if (response.status === 401) throw new Error('Unauthorized');
+        if (!response.ok) throw new Error('Network response was not ok');
+
+        return await response.json(); // This actually returns the data to the caller
+    } catch (error) {
+        console.error(`Error fetching user type ${userType}:`, error);
+        return []; // Return empty array on error to prevent .forEach crashes
+    }
+}
+
 function populatePageFromSession() {
-    // 1. Retrieve and Parse Data
-    const rawData = sessionStorage.getItem('salesmanRetailerDataMap'); // Ensure key matches your storage key
+    const rawData = sessionStorage.getItem('salesmanRetailerDataMap');
     if (!rawData) {
         console.warn("No mapping data found in sessionStorage.");
         return;
@@ -17,32 +55,17 @@ function populatePageFromSession() {
 
     try {
         const mappings = JSON.parse(rawData);
-        
-        // Selectors
         const salesmanDropdown = document.getElementById('salesmanSelect');
         const retailerDropdown = document.getElementById('retailerSelect');
         const tableBody = document.getElementById('mappingTableBody');
 
-        // Clear existing static/demo content
+        tableBody.innerHTML = '';
         salesmanDropdown.innerHTML = '<option value="" selected disabled>Choose a salesman...</option>';
         retailerDropdown.innerHTML = '<option value="" selected disabled>Choose a retailer...</option>';
-        tableBody.innerHTML = '';
 
-        // Sets to track unique entities for dropdowns
-        const uniqueSalesmen = new Map();
-        const uniqueRetailers = new Map();
-
-        // 2. Iterate through the JSON Object
+        // 1. Populate Table
         Object.keys(mappings).forEach(key => {
-            const item = mappings[key];
-            const salesman = item.salesman;
-            const retailer = item.retailer;
-
-            // Track unique entries for the dropdowns
-            uniqueSalesmen.set(salesman.userId, `${salesman.firstName} ${salesman.lastName}`);
-            uniqueRetailers.set(retailer.shopId, retailer.shopName);
-
-            // 3. Populate Table Row
+            const { salesman, retailer } = mappings[key];
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
@@ -59,48 +82,84 @@ function populatePageFromSession() {
                     </span>
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editMapping('${key}')">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMapping('${key}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            `;
+                    <button class="btn btn-sm btn-outline-primary" onclick="editMapping('${key}')"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMapping('${key}')"><i class="bi bi-trash"></i></button>
+                </td>`;
             tableBody.appendChild(row);
         });
 
-        // 4. Populate Dropdowns
-        uniqueSalesmen.forEach((name, id) => {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.textContent = name;
-            salesmanDropdown.appendChild(opt);
+        // 2. Populate Dropdowns (Now retailers and salesmans will have data)
+        retailers.forEach(item => {
+            if (item.isActive) {
+                const opt = new Option(`${item.firstName} ${item.lastName}`.trim(), item.userId);
+                retailerDropdown.add(opt);
+            }
+
         });
 
-        uniqueRetailers.forEach((name, id) => {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.textContent = name;
-            retailerDropdown.appendChild(opt);
+        salesmans.forEach(item => {
+            if (item.isActive) {
+                const opt = new Option(`${item.firstName} ${item.lastName}`.trim(), item.userId);
+                salesmanDropdown.add(opt);
+            }
+
         });
 
     } catch (error) {
-        console.error("Error parsing session data:", error);
+        console.error("Error populating page:", error);
     }
 }
 
-/**
- * Placeholder functions for Edit/Delete
- */
-function editMapping(mappingId) {
-    console.log("Editing mapping ID:", mappingId);
-    // Implementation: Fetch object from session, fill the form, change 'Assign' button to 'Update'
-}
+document.getElementById('mappingForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); // Prevent page refresh
 
-function deleteMapping(mappingId) {
-    if(confirm("Are you sure you want to remove this assignment?")) {
-        console.log("Deleting mapping ID:", mappingId);
-        // Implementation: Remove from session storage and refresh UI
+    const salesmanId = document.getElementById('salesmanSelect').value;
+    const retailerId = document.getElementById('retailerSelect').value;
+    
+    if (!salesmanId || !retailerId ) {
+        alert("Please ensure Salesman, Retailer are provided.");
+        return;
+    }
+
+    const requestBody = {
+        "salesmanId": parseInt(salesmanId),
+        "retailerId": parseInt(retailerId),
+        "vehicleNumber": '',
+        "createdBy": 0,
+        "active": true,
+        "branchId": 0
+    };
+
+    await assignMapping(requestBody);
+});
+
+async function assignMapping(data) {
+    const sessionString = sessionStorage.getItem('user');
+    const userData = JSON.parse(sessionString);
+    const encodedCredentials = btoa(`${userData.phoneNumber}:${userData.password}`);
+
+    try {
+        const response = await fetch('http://localhost:8080/salesmantoretail/assign', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${encodedCredentials}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            alert("Mapping assigned successfully!");
+            
+            // Optionally refresh the page or update the table/session storage here
+            location.reload(); 
+        } else {
+            const errorData = await response.text();
+            alert("Failed to assign mapping: " + errorData);
+        }
+    } catch (error) {
+        console.error('Error during assignment:', error);
+        alert("An error occurred while connecting to the server.");
     }
 }
