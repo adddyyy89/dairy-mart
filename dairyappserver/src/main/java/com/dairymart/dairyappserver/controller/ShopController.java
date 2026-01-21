@@ -28,6 +28,18 @@ public class ShopController {
     @Autowired
     private ShopService shopService;
 
+    @GetMapping(value = "/get/all", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getAllShop() {
+        logger.info("getAllShop called.");
+
+        List<ShopDao> shopDaos = shopService.getAllShops();
+        List<ShopDTO> shopDTOList = new ArrayList<>(shopDaos.size());
+        shopDaos.stream().forEach(x -> shopDTOList.add(new ShopDTO(x)));
+
+        logger.info("All Shop details fetched");
+        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(shopDTOList));
+    }
+
     @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> addShop(@RequestBody ShopDTO shopDto) {
         logger.info("add shop called.");

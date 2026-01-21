@@ -37,7 +37,8 @@ public class SalesmanToRetailDTO {
         this.vehicleNumber = dao.getVehicleNumber();
         this.branchId = dao.getBranchId();
         this.isActive = dao.isActive();
-        this.branch = new BranchDTO(dao.getBranch());
+        if(dao.getBranch() != null)
+            this.branch = new BranchDTO(dao.getBranch());
     }
 
     public int getSalesmanId() {

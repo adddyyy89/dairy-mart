@@ -1,5 +1,6 @@
-let retailers = [];
+let shops = [];
 let salesmans = [];
+let assignments = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     const sessionString = sessionStorage.getItem('user');
@@ -10,13 +11,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Use Promise.all to fetch both lists in parallel and WAIT for them
     try {
-        const [retailerData, salesmanData] = await Promise.all([
-            getUsersByType(3, encodedCredentials),
-            getUsersByType(2, encodedCredentials)
+        const [shopData, salesmanData, assignmentData] = await Promise.all([
+            getAllShops(encodedCredentials),
+            getUsersByType(2, encodedCredentials),
+            getCurrentAssignments(encodedCredentials)
         ]);
 
-        retailers = retailerData;
+        shops = shopData;
         salesmans = salesmanData;
+        assignments = assignmentData;
 
         // Only populate the page AFTER data is received
         populatePageFromSession();
@@ -46,15 +49,73 @@ async function getUsersByType(userType, encodedCredentials) {
     }
 }
 
-function populatePageFromSession() {
-    const rawData = sessionStorage.getItem('salesmanRetailerDataMap');
-    if (!rawData) {
-        console.warn("No mapping data found in sessionStorage.");
-        return;
+// Added 'async' and 'await' here
+async function getAllShops(encodedCredentials) {
+    try {
+        const response = await fetch('http://localhost:8080/shop/get/all', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${encodedCredentials}`
+            }
+        });
+
+        if (response.status === 401) throw new Error('Unauthorized');
+        if (!response.ok) throw new Error('Network response was not ok');
+
+        return await response.json(); // This actually returns the data to the caller
+    } catch (error) {
+        console.error(`Error fetching user type ${userType}:`, error);
+        return []; // Return empty array on error to prevent .forEach crashes
     }
+}
+
+// Added 'async' and 'await' here
+async function getUsersByType(userType, encodedCredentials) {
+    try {
+        const response = await fetch('http://localhost:8080/user/get/usertype/' + userType, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${encodedCredentials}`
+            }
+        });
+
+        if (response.status === 401) throw new Error('Unauthorized');
+        if (!response.ok) throw new Error('Network response was not ok');
+
+        return await response.json(); // This actually returns the data to the caller
+    } catch (error) {
+        console.error(`Error fetching user type ${userType}:`, error);
+        return []; // Return empty array on error to prevent .forEach crashes
+    }
+}
+
+// Added 'async' and 'await' here
+async function getCurrentAssignments(encodedCredentials) {
+    try {
+        const response = await fetch('http://localhost:8080/salesmantoretail/get/all', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${encodedCredentials}`
+            }
+        });
+
+        if (response.status === 401) throw new Error('Unauthorized');
+        if (!response.ok) throw new Error('Network response was not ok');
+
+        return await response.json(); // This actually returns the data to the caller
+    } catch (error) {
+        console.error(`Error fetching user type ${userType}:`, error);
+        return []; // Return empty array on error to prevent .forEach crashes
+    }
+}
+
+function populatePageFromSession() {
+    
 
     try {
-        const mappings = JSON.parse(rawData);
         const salesmanDropdown = document.getElementById('salesmanSelect');
         const retailerDropdown = document.getElementById('retailerSelect');
         const tableBody = document.getElementById('mappingTableBody');
@@ -64,34 +125,34 @@ function populatePageFromSession() {
         retailerDropdown.innerHTML = '<option value="" selected disabled>Choose a retailer...</option>';
 
         // 1. Populate Table
-        Object.keys(mappings).forEach(key => {
-            const { salesman, retailer } = mappings[key];
+        assignments.forEach(item => {
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
-                    <div class="fw-bold">${salesman.firstName} ${salesman.lastName}</div>
-                    <small class="text-muted">${salesman.phoneNumber}</small>
+                    <div class="fw-bold">${item.salesman.firstName} ${item.salesman.lastName}</div>
+                    <small class="text-muted">${item.salesman.phoneNumber}</small>
                 </td>
                 <td>
-                    <div class="fw-bold">${retailer.shopName}</div>
-                    <small class="text-muted">${retailer.address.fullAddress}</small>
+                    <div class="fw-bold">${item.retailer.shopName}</div>
+                    <small class="text-muted">${item.retailer.address.fullAddress}</small>
                 </td>
                 <td>
-                    <span class="badge ${retailer.isActive ? 'bg-success' : 'bg-secondary'}">
-                        ${retailer.isActive ? 'Active' : 'Inactive'}
+                    <span class="badge ${item.retailer.isActive ? 'bg-success' : 'bg-secondary'}">
+                        ${item.retailer.isActive ? 'Active' : 'Inactive'}
                     </span>
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-outline-primary" onclick="editMapping('${key}')"><i class="bi bi-pencil-square"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMapping('${key}')"><i class="bi bi-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editMapping('${item.salesmanId}', '${item.retailerId}')"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMapping('${item.salesmanId}', '${item.retailerId}')"><i class="bi bi-trash"></i></button>
                 </td>`;
             tableBody.appendChild(row);
         });
 
         // 2. Populate Dropdowns (Now retailers and salesmans will have data)
-        retailers.forEach(item => {
+        shops.forEach(item => {
             if (item.isActive) {
-                const opt = new Option(`${item.firstName} ${item.lastName}`.trim(), item.userId);
+                const opt = new Option(`${item.shopName}`.trim(), item.shopId);
                 retailerDropdown.add(opt);
             }
 
