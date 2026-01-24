@@ -93,26 +93,20 @@
           <div class="filter-container">
         <div class="row g-2 align-items-end">
             <div class="col-md-2">
-                      <label for="productTypeId" class="form-label">Filter by Type<span class="text-danger">*</span></label>
-                      <select class="form-select" id="productTypeId" name="productTypeId" required>
-                        <option value="" selected disabled>Select Product Type</option>
-                        <option value="1">Milk</option>
-                        <option value="2">Butter</option>
-                        <option value="3">Cheese</option>
-                        <option value="4">Cream</option>
-                        <option value="5">Ghee</option>
-                        <option value="6">Yoghurt</option>
-                        <option value="7">Buttermilk</option>
-                        <option value="8">Ice Cream</option>
-                      </select>
-                    </div>
+              <label for="productTypeId" class="form-label">Filter by Type<span class="text-danger">*</span></label>
+              <select class="form-select" id="productTypeId" name="productTypeId" required>
+                <option value="" selected disabled>Select Product Type</option>
+                <option value="1">Milk</option>
+                <option value="2">Butter</option>
+              </select>
+            </div>
             
             <div class="col">
                 <input type="text" id="searchInput" class="form-control" placeholder="Search by name" onkeyup="">
             </div>
 
             <div class="col-auto">
-              <a href="./adduser.html" class="btn btn-success">
+              <a href="./addproduct.html" class="btn btn-success">
                 <i class="bi bi-plus-lg me-1"></i>Add Products
               </a>
             </div>
@@ -120,7 +114,7 @@
     </div>
 
     <div class="table-container bg-white">
-        <table class="table table-hover mb-0" id="userTable">
+        <table class="table table-hover mb-0" id="productTable">
             <thead class="table-dark">
                 <tr class="clickable-row">
                     <th>Product Id</th>
