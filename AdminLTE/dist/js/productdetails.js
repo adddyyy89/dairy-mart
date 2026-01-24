@@ -13,11 +13,12 @@ async function loadProductTypeData() {
         productTypeField.innerHTML = "";
 
         productTypes.forEach(productType => {
-      // Map JSON keys to your table columns
-      const row = `
-        <option value="">Select Type</option>
-      `;
-      tbody.innerHTML += row;
+            // Map JSON keys to your table columns
+            const row = `
+                <option value="">Select Type</option>
+            `;
+            tbody.innerHTML += row;
+        });
 
     } catch (error) {
         console.error("Error:", error);
