@@ -145,27 +145,75 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const formData = new FormData(e.target);
-    const updatedData = Object.fromEntries(formData.entries());
+    const formEntries = Object.fromEntries(formData.entries());
 
     // NOTE: If your backend expects the nested 'brand' and 'type' objects 
     // to be sent back, you may need to reconstruct them here.
-    
-    try {
-        const response = await fetch('http://localhost:8080/product/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedData)
-        });
 
-        if (response.ok) {
-            alert('Product updated successfully!');
-            location.reload(); // Refresh to show updated view
-        } else {
-            alert('Update failed.');
+    // try {
+    //     const response = await fetch('http://localhost:8080/product/update', {
+    //         method: 'POST',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify(updatedData)
+    //     });
+
+    //     if (response.ok) {
+    //         alert('Product updated successfully!');
+    //         location.reload(); // Refresh to show updated view
+    //     } else {
+    //         alert('Update failed.');
+    //     }
+    // } catch (error) {
+    //     console.error('Error:', error);
+    // }
+
+    const selectedProductType = productTypes.find(productType => productType.productTypeId == formEntries.productTypeId );
+    const brandData = originalData.brand;
+    const updatedData = {
+        productId: parseInt(formEntries.productId) || originalData.productId,
+        hsn: formEntries.hsn,
+        productName: formEntries.productName,
+        productShortName: formEntries.productShortName,
+        productPurchaseRate: formEntries.productPurchaseRate,
+        productSaleRate: formEntries.productSaleRate,
+        mrp: formEntries.mrp,
+        quantity: formEntries.quantity,
+        unit: formEntries.unit,
+        productCode: formEntries.productCode,
+        igst: formEntries.igst || "0",
+        productPictureUrl: originalData.productPictureUrl, 
+        createdBy: originalData.createdBy || 0,
+        isActive: formEntries.isActive === 'on' || originalData.isActive,
+        productTypeId: parseInt(formEntries.productTypeId),
+        brandId: parseInt(formEntries.brandId),
+        type: {
+            productTypeId: parseInt(formEntries.productTypeId),
+            productTypeName: selectedProductType ? selectedProductType.productTypeName : originalData.type.productTypeName
+        },
+        brand: {
+            brandId: parseInt(formEntries.brandId),
+            brandName: formEntries.brandName || brandData.brandName
         }
-    } catch (error) {
-        console.error('Error:', error);
-    }
+    };
+    console.log('updated Data :', updatedData);
+
+    // try {
+    //     const response = await fetch('http://localhost:8080/product/update', {
+    //         method: 'POST',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify(updatedData)
+    //     });
+
+    //     if (response.ok) {
+    //         alert('Product updated successfully!');
+    //         location.reload(); // Refresh to show updated view
+    //     } else {
+    //         alert('Update failed.');
+    //     }
+    // } catch (error) {
+    //     console.error('Error:', error);
+    // }
+    
 });
 window.onload = async function() {
     await loadProductTypeData(); 
