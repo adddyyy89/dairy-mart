@@ -39,19 +39,10 @@
   <!--end::Third Party Plugin(Bootstrap Icons)-->
   <!--begin::Required Plugin(AdminLTE)-->
   <link rel="stylesheet" href="../css/adminlte.css" />
+  <link rel="stylesheet" href="../css/common.css" />
   <style>
-    .filter-container {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-
-    .table-container {
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-      overflow: hidden;
-    }
+    .filter-container { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .table-container { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
   </style>
   <!--end::Required Plugin(AdminLTE)-->
 </head>
@@ -60,6 +51,7 @@
 
 <body class="layout-fixed sidebar-expand-lg sidebar-open bg-body-tertiary">
   <script src="../js/auth.js"></script>
+  
   <!--begin::App Wrapper-->
   <div class="app-wrapper">
 
@@ -80,12 +72,12 @@
           <!--begin::Row-->
           <div class="row">
             <div class="col-sm-6">
-              <h3 class="mb-0">Users</h3>
+              <h3 class="mb-0">Products</h3>
             </div>
             <div class="col-sm-6">
               <ol class="breadcrumb float-sm-end">
                 <li class="breadcrumb-item"><a href="#">Home</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Users</li>
+                <li class="breadcrumb-item active" aria-current="page">Products</li>
               </ol>
             </div>
           </div>
@@ -99,43 +91,44 @@
         <!--begin::Container-->
         <div class="container-fluid">
           <div class="filter-container">
-            <div class="row g-3 align-items-center">
-              <div class="col-auto">
-                <div class="btn-group" role="group" aria-label="Filter Options">
-                  <button type="button" class="btn btn-primary" onclick="filterTable('Show All')">Show All</button>
-                  
-                </div>
-              </div>
-
-              <div class="col">
-                <input type="text" id="searchInput" class="form-control" placeholder="Search by name or email..."
-                  onkeyup="searchTable()">
-              </div>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+              <label for="productTypeId" class="form-label">Filter by Type<span class="text-danger">*</span></label>
+              <select class="form-select" id="productTypeId" name="productTypeId" required>
+                <option value="" selected disabled>Select Product Type</option>
+                <option value="1">Milk</option>
+                <option value="2">Butter</option>
+              </select>
             </div>
-          </div>
-
-
-          <div class="table-container bg-white">
-            <div class="card shadow">
-              <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                  <thead class="table-dark">
-                    <tr>
-                      <th>ID</th>
-                      <th>Image</th>
-                      <th>Product Name</th>
-                      <th>Brand</th>
-                      <th>Qty</th>
-                      <th>Unit</th>
-                      <th>MRP</th>
-                    </tr>
-                  </thead>
-                  <tbody id="product-table-body">
-                  </tbody>
-                </table>
-              </div>
+            
+            <div class="col">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search by name" onkeyup="">
             </div>
-          </div>
+
+            <div class="col-auto">
+              <a href="./addproduct.html" class="btn btn-success">
+                <i class="bi bi-plus-lg me-1"></i>Add Products
+              </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container bg-white">
+        <table class="table table-hover mb-0" id="productTable">
+            <thead class="table-dark">
+                <tr class="clickable-row">
+                    <th>Product Id</th>
+                    <th>Image</th>
+                    <th>Product Name</th>
+                    <th>Brand Name</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                    <th>MRP</th>
+                </tr>
+            </thead>
+            <tbody id="product-table-body"></tbody>
+        </table>
+    </div>
         </div>
         <!--end::Container-->
       </div>
@@ -144,9 +137,9 @@
     <!--end::App Main-->
 
     <!--begin::Footer-->
-    
-    <div id="footer-container" class="app-footer"></div>
+    <div class="app-footer" id="footer-container"></div>
     <!--end::Footer-->
+
   </div>
   <!--end::App Wrapper-->
   <!--begin::Script-->
@@ -163,7 +156,7 @@
   <script src="../js/products.js"></script>
   <!--end::Required Plugin(AdminLTE)--><!--begin::OverlayScrollbars Configure-->
 
-   <!-- COMPONENTS -->
+  <!-- COMPONENTS -->
   <script src="../components/header.js"></script>
   <script src="../components/sidebar.js"></script>
   <script src="../components/footer.js"></script>
@@ -174,7 +167,6 @@
       loadLayout({basePath: '../'});
     });
   </script>
-  
   <!--end::OverlayScrollbars Configure-->
   <!--end::Script-->
 </body>

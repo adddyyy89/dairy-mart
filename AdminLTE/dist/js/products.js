@@ -3,33 +3,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const rows = document.querySelectorAll('.clickable-row');
     rows.forEach(row => {
         row.addEventListener('click', () => {
-            window.location.href = "user" + row.dataset.href;
+            window.location.href = "Product" + row.dataset.href;
         });
     });
 });
 
-function filterTable(type) {
-    const table = document.getElementById("userTable");
-    const tr = table.getElementsByTagName("tr");
-
-    for (let i = 1; i < tr.length; i++) {
-        const typeColumn = tr[i].getElementsByTagName("td")[1]; // User Type is 2nd column
-        if (typeColumn) {
-            const textValue = typeColumn.textContent || typeColumn.innerText;
-            if (type === "Show All" || textValue.trim() === type) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
-            }
-        }
-    }
-}
 
 // Dynamic Search Input
 function searchTable() {
     const input = document.getElementById("searchInput");
     const filter = input.value.toUpperCase();
-    const table = document.getElementById("userTable");
+    const table = document.getElementById("productTable");
     const tr = table.getElementsByTagName("tr");
 
     for (let i = 1; i < tr.length; i++) {
@@ -41,6 +25,33 @@ function searchTable() {
             }
         }
         tr[i].style.display = found ? "" : "none";
+    }
+}
+
+async function loadProductTypeData() {
+
+    try {
+        const response = await fetch(`http://localhost:8080/product/producttype/getall`);
+        if (!response.ok) throw new Error("Product types not found");
+        
+        const data = await response.json();
+        productTypes = data; 
+
+        const productTypeField = document.getElementById("productTypeId");
+        productTypeField.innerHTML = '<option value="" selected disabled>Select Product Type</option>';
+
+        productTypes.forEach(productType => {
+            // Map JSON keys to your table columns
+            console.log(productType);
+            const row = `
+                <option value="">${productType.productTypeName}</option>
+            `;
+            productTypeField.innerHTML += row;
+        });
+
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Could not load product details.");
     }
 }
 
@@ -88,3 +99,4 @@ function goToDetails(productId) {
 }
 
 loadProducts();
+loadProductTypeData();

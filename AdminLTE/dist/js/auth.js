@@ -1,5 +1,4 @@
 // immediate auth check 
-
 (function () {
     const isLoginPage = window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/');
 

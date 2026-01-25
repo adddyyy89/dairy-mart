@@ -41,7 +41,7 @@
   <link rel="stylesheet" href="../css/adminlte.css" />
   <style>
     .filter-container { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-    .table-container { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+        .table-container { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
   </style>
   <!--end::Required Plugin(AdminLTE)-->
 </head>
@@ -50,14 +50,18 @@
 
 <body class="layout-fixed sidebar-expand-lg sidebar-open bg-body-tertiary">
   <script src="../js/auth.js"></script>
+
   <!--begin::App Wrapper-->
   <div class="app-wrapper">
+
     <!--begin::Header-->
-    <div class="app-header navbar navbar-expand bg-body" id="header-container"></div>
+    <nav id="header-container" class="app-header navbar navbar-expand bg-body"></nav>
     <!--end::Header-->
+
     <!--begin::Sidebar-->
-    <div class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark" id="sidebar-container"></div>
+    <aside id="sidebar-container" class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark"></aside>
     <!--end::Sidebar-->
+
     <!--begin::App Main-->
     <main class="app-main">
       <!--begin::App Content Header-->
@@ -67,12 +71,12 @@
           <!--begin::Row-->
           <div class="row">
             <div class="col-sm-6">
-              <h3 class="mb-0">Orders</h3>
+              <h3 class="mb-0">Product Details</h3>
             </div>
             <div class="col-sm-6">
               <ol class="breadcrumb float-sm-end">
                 <li class="breadcrumb-item"><a href="#">Home</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Orders</li>
+                <li class="breadcrumb-item active" aria-current="page">Products Details</li>
               </ol>
             </div>
           </div>
@@ -85,88 +89,94 @@
       <div class="app-content">
         <!--begin::Container-->
         <div class="container-fluid">
-          <div class="filter-container">
-            <div class="row g-3 align-items-center">
-              <div class="col-auto">
-                <div class="btn-group" role="group" aria-label="Filter Options">
-                  <button type="button" class="btn btn-primary" onclick="filterTable('Show All')">Show All</button>
-                  <button type="button" class="btn btn-outline-primary" onclick="filterTable('Today')">Today</button>
-                </div>
+          <div class="container py-5">
+            <div class="card shadow">
+              <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Product</h4>
+                <button id="editBtn" class="btn btn-outline-primary" onclick="toggleEditMode()">Edit Product Details</button>
               </div>
-              
-              <div class="col">
-                <input type="text" id="searchInput" class="form-control" placeholder="Search by name or email..." onkeyup="searchTable()">
+              <div class="card-body">
+                <form id="productForm">
+                  <div class="row g-3">
+                    <div class="col-12 d-flex justify-content-center mb-3">
+                      <img src="" id="productImagePreview" name="productImage" alt="Product Image Preview">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Product Name</label>
+                      <input type="text" name="productName" id="productName" class="form-control editable-field" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Product Code</label>
+                      <input type="text" name="productCode" id="productCode" class="form-control editable-field" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">HSN</label>
+                      <input type="text" name="hsn" id="hsn" class="form-control editable-field" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label for="productTypeId" class="form-label">Product Type <span class="text-danger">*</span></label>
+                      <select class="form-select editable-field" id="productTypeId" name="productTypeId" disabled>
+                        <option value="" selected disabled>Select Product Type</option>
+                        <option value="1">Milk</option>
+                        <option value="2">Butter</option>
+                        <option value="3">Cheese</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Brand Name</label>
+                      <input type="text" name="brandName" id="brandName" class="form-control editable-field" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Brand Id</label>
+                      <input type="text" name="brandId" id="brandId" class="form-control editable-field" readonly>
+                    </div>
+                    
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Product Short Name</label>
+                      <input type="text" name="productShortName" id="productShortName" class="form-control editable-field" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Purchase Rate</label>
+                      <input type="text" name="productPurchaseRate" id="productPurchaseRate" class="form-control editable-field" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Sale Rate</label>
+                      <input type="text" name="productSaleRate" id="productSaleRate" class="form-control editable-field" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">MRP</label>
+                      <input type="text" name="mrp" id="mrp" class="form-control editable-field" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Quantity</label>
+                      <input type="text" name="quantity" id="quantity"
+                        class="form-control editable-field" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Unit</label>
+                      <input type="text" name="unit" id="unit" class="form-control editable-field" readonly>
+                    </div>
+                    
+                    
+                    <div class="col-md-6">
+                      <label class="form-label">Status</label>
+                      <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
+                        <label class="form-check-label" for="isActive">Active</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div id="actionButtons" class="mt-4 d-none">
+                    <hr>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
+                      <button type="submit" class="btn btn-success">Save Changes</button>
+                    </div>
+                  </div>
+                </form>
               </div>
             </div>
-          </div>
-
-          <div class="table-container bg-white">
-            <table class="table table-hover mb-0" id="orderTable">
-              <thead class="table-dark">
-                <tr class="clickable-row">
-                  <th>Order Id</th>
-                  <th>Order Date</th>
-                  <th>Retailer Id</th>
-                  <th>Retailer Name</th>
-                  <th>Branch Id</th>
-                  <th>Created By</th>
-                  <th>Created On</th>
-                  <th>Order Status</th>
-                  <th>Salesman Id</th>
-                  <th>Salesman Name</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="clickable-row">
-                  <td>John Doe</td>
-                  <td>2026-01-03</td>
-                  <td>+1 234 567 890</td>
-                  <td>john@retail.com</td>
-                  <td>123 Market St, NY</td>
-                  <td>123 Market St, NY</td>
-                  <td>123 Market St, NY</td>
-                  <td>123 Market St, NY</td>
-                  <td><span class="badge bg-info text-dark">PENDING</span></td>
-                  <td>123 Market St, NY</td>
-                </tr>
-                <tr class="clickable-row">
-                  <td>Sarah Smith</td>
-                  <td>2026-01-02</td>
-                  <td>+1 987 654 321</td>
-                  <td>sarah@sales.com</td>
-                  <td>456 Business Ave, CA</td>
-                  <td>123 Market St, NY</td>
-                  <td>123 Market St, NY</td>
-                  <td>123 Market St, NY</td>
-                  <td><span class="badge bg-info text-dark">PENDING</span></td>
-                  <td>123 Market St, NY</td>
-                </tr>
-                <tr class="clickable-row">
-                  <td>Mike Admin</td>
-                  <td>2026-01-01</td>
-                  <td>+1 555 012 345</td>
-                  <td>mike@system.com</td>
-                  <td>Headquarters, TX</td>
-                  <td>123 Market St, NY</td>
-                  <td>123 Market St, NY</td>
-                  <td>123 Market St, NY</td>
-                  <td><span class="badge bg-info text-dark">PENDING</span></td>
-                  <td>123 Market St, NY</td>
-                </tr>
-                <tr class="clickable-row">
-                  <td>Alex Wong</td>
-                  <td>2026-01-03</td>
-                  <td>+1 444 222 333</td>
-                  <td>alex@shop.com</td>
-                  <td>789 Plaza Rd, WA</td>
-                  <td>123 Market St, NY</td>
-                  <td>123 Market St, NY</td>
-                  <td>123 Market St, NY</td>
-                  <td><span class="badge bg-info text-dark">PENDING</span></td>
-                  <td>123 Market St, NY</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
         <!--end::Container-->
@@ -176,28 +186,25 @@
     <!--end::App Main-->
 
     <!--begin::Footer-->
-    <div class="app-footer" id="footer-container"></div>
+    <footer id="footer-container" class="app-footer"></footer>
     <!--end::Footer-->
-
+    
   </div>
   <!--end::App Wrapper-->
   <!--begin::Script-->
   <!--begin::Third Party Plugin(OverlayScrollbars)-->
   <script src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js"
     crossorigin="anonymous"></script>
-  <!--end::Third Party Plugin(OverlayScrollbars)-->
-  <!--begin::Required Plugin(popperjs for Bootstrap 5)-->
+  <!--end::Third Party Plugin(OverlayScrollbars)--><!--begin::Required Plugin(popperjs for Bootstrap 5)-->
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
     crossorigin="anonymous"></script>
-  <!--end::Required Plugin(popperjs for Bootstrap 5)-->
-  <!--begin::Required Plugin(Bootstrap 5)-->
+  <!--end::Required Plugin(popperjs for Bootstrap 5)--><!--begin::Required Plugin(Bootstrap 5)-->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
-  <!--end::Required Plugin(Bootstrap 5)-->
-  <!--begin::Required Plugin(AdminLTE)-->
+  <!--end::Required Plugin(Bootstrap 5)--><!--begin::Required Plugin(AdminLTE)-->
   <script src="../js/adminlte.js"></script>
-  <script src="../js/orders.js"></script>
-  <!--end::Required Plugin(AdminLTE)-->
-
+  <script src="../js/productdetails.js"></script>
+  <!--end::Required Plugin(AdminLTE)--><!--begin::OverlayScrollbars Configure-->
+  
   <!-- COMPONENTS -->
   <script src="../components/header.js"></script>
   <script src="../components/sidebar.js"></script>
@@ -209,7 +216,7 @@
       loadLayout({basePath: '../'});
     });
   </script>
-
+  <!--end::OverlayScrollbars Configure-->
   <!--end::Script-->
 </body>
 <!--end::Body-->

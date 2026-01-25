@@ -9,15 +9,16 @@ async function loadProductTypeData() {
         
         const data = await response.json();
         productTypes = data; 
-        const productTypeField = document.getElementById("productTypeId");
-        productTypeField.innerHTML = "";
+        // const productTypeField = document.getElementById("productTypeId");
+        // productTypeField.innerHTML = `""`;
 
-        productTypes.forEach(productType => {
-      // Map JSON keys to your table columns
-      const row = `
-        <option value="">Select Type</option>
-      `;
-      tbody.innerHTML += row;
+        // productTypes.forEach(productType => {
+        //     // Map JSON keys to your table columns
+        //     const row = `
+        //         <option value="" >${productType.productTypeName}</option>
+        //     `;
+        //     productTypeField.innerHTML += row;
+        // });
 
     } catch (error) {
         console.error("Error:", error);
@@ -43,6 +44,7 @@ async function loadProductData() {
 }
 
 function populateForm(data) {
+    console.log(data);
     // 1. Fill standard top-level fields (productId, hsn, productName, etc.)
     const fields = [
         'productId', 'hsn', 'productName', 'productShortName', 
@@ -59,15 +61,33 @@ function populateForm(data) {
     if (data.brand) {
         document.getElementById('brandName').value = data.brand.brandName ?? "";
     }
-    if (data.type) {
-        document.getElementById('productTypeName').value = data.type.productTypeName ?? "";
+    // 3. Product Type
+    const productTypeField = document.getElementById('productTypeId');
+    if(data.type && productTypeField){
+        productTypeField.innerHTML = `<option value="${data.type.productTypeId}">${data.type.productTypeName}</option>`
     }
-
-    // 3. Handle Image Preview
+    // 4. Handle Image Preview
     const imgPreview = document.getElementById('productImagePreview');
     if (imgPreview) {
         imgPreview.src = data.productPictureUrl || 'placeholder.jpg';
     }
+}
+
+function populateProductTypeDropdown() {
+    const productTypeField = document.getElementById('productTypeId');
+    const currentValue = productTypeField.value;
+
+    productTypeField.innerHTML = `<option value="" disabled>Select Product Type</option>`;
+
+    productTypes.forEach(productType => {
+        const option = document.createElement('option');
+        option.value = productType.productTypeId;
+        option.textContent = productType.productTypeName;
+        if (productType.productTypeId == currentValue){
+            option.selected = true;
+        }
+        productTypeField.appendChild(option);
+    })
 }
 
 // TOGGLE EDIT MODE (Same as previous step)
@@ -77,7 +97,15 @@ function toggleEditMode() {
     inputs.forEach(input => {
         // Exclude productId from being edited if desired
         if (input.id !== 'productId') {
-            input.readOnly = false;
+            if (input.tagName === 'SELECT') {
+                input.removeAttribute('disabled');
+                // Populate dropdown when entering edit mode
+                if (input.id === 'productTypeId') {
+                    populateProductTypeDropdown();
+                }
+            } else {
+                input.readOnly = false;
+            }
             input.classList.add('border');
         }
     });
@@ -95,8 +123,12 @@ function cancelEdit() {
     const actionButtons = document.getElementById('actionButtons');
 
     // 3. Switch fields back to Read-Only and remove the border
-    inputs.forEach(input => {
-        input.readOnly = true;
+   inputs.forEach(input => {
+        if (input.tagName === 'SELECT') {
+            input.setAttribute('disabled', 'disabled');
+        } else {
+            input.readOnly = true;
+        }
         input.classList.remove('border');
     });
 
@@ -113,27 +145,77 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const formData = new FormData(e.target);
-    const updatedData = Object.fromEntries(formData.entries());
+    const formEntries = Object.fromEntries(formData.entries());
 
     // NOTE: If your backend expects the nested 'brand' and 'type' objects 
     // to be sent back, you may need to reconstruct them here.
-    
-    try {
-        const response = await fetch('http://localhost:8080/product/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedData)
-        });
 
-        if (response.ok) {
-            alert('Product updated successfully!');
-            location.reload(); // Refresh to show updated view
-        } else {
-            alert('Update failed.');
+    // try {
+    //     const response = await fetch('http://localhost:8080/product/update', {
+    //         method: 'POST',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify(updatedData)
+    //     });
+
+    //     if (response.ok) {
+    //         alert('Product updated successfully!');
+    //         location.reload(); // Refresh to show updated view
+    //     } else {
+    //         alert('Update failed.');
+    //     }
+    // } catch (error) {
+    //     console.error('Error:', error);
+    // }
+
+    const selectedProductType = productTypes.find(productType => productType.productTypeId == formEntries.productTypeId );
+    const brandData = originalData.brand;
+    const updatedData = {
+        productId: parseInt(formEntries.productId) || originalData.productId,
+        hsn: formEntries.hsn,
+        productName: formEntries.productName,
+        productShortName: formEntries.productShortName,
+        productPurchaseRate: formEntries.productPurchaseRate,
+        productSaleRate: formEntries.productSaleRate,
+        mrp: formEntries.mrp,
+        quantity: formEntries.quantity,
+        unit: formEntries.unit,
+        productCode: formEntries.productCode,
+        igst: formEntries.igst || "0",
+        productPictureUrl: originalData.productPictureUrl, 
+        createdBy: originalData.createdBy || 0,
+        isActive: formEntries.isActive === 'on' || originalData.isActive,
+        productTypeId: parseInt(formEntries.productTypeId),
+        brandId: parseInt(formEntries.brandId),
+        type: {
+            productTypeId: parseInt(formEntries.productTypeId),
+            productTypeName: selectedProductType ? selectedProductType.productTypeName : originalData.type.productTypeName
+        },
+        brand: {
+            brandId: parseInt(formEntries.brandId),
+            brandName: formEntries.brandName || brandData.brandName
         }
-    } catch (error) {
-        console.error('Error:', error);
-    }
-});
+    };
+    console.log('updated Data :', updatedData);
 
-window.onload = loadProductData;
+    // try {
+    //     const response = await fetch('http://localhost:8080/product/update', {
+    //         method: 'POST',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify(updatedData)
+    //     });
+
+    //     if (response.ok) {
+    //         alert('Product updated successfully!');
+    //         location.reload(); // Refresh to show updated view
+    //     } else {
+    //         alert('Update failed.');
+    //     }
+    // } catch (error) {
+    //     console.error('Error:', error);
+    // }
+    
+});
+window.onload = async function() {
+    await loadProductTypeData(); 
+    await loadProductData();     
+};
