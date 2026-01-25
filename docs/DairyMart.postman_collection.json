@@ -389,10 +389,25 @@
         {
           "name": "http://localhost:8080/user/get/usertype",
           "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "admin",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "9674350485",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/user/get/usertype/0",
+              "raw": "http://localhost:8080/user/get/usertype/3",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -402,7 +417,7 @@
                 "user",
                 "get",
                 "usertype",
-                "0"
+                "3"
               ]
             }
           },
@@ -672,6 +687,42 @@
                 "shop",
                 "get",
                 "401"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "http://localhost:8080/shop/get/all",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "admin",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "9674350485",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/shop/get/all",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "shop",
+                "get",
+                "all"
               ]
             }
           },
