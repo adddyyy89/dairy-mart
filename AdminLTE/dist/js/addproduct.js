@@ -67,4 +67,20 @@ document.getElementById('addProductForm').addEventListener('submit', async funct
         }
     };
     console.log('New Product Data :', productData);
+
+    // try {
+    //     const response = await fetch('http://localhost:8080/product/add', {
+    //         method: 'POST',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify(productData)
+    //     });
+
+    //     if (response.ok) {
+    //         alert('Product added successfully!');
+    //     } else {
+    //         alert('Failed.');
+    //     }
+    // } catch (error) {
+    //     console.error('Error:', error);
+    // }
 });
