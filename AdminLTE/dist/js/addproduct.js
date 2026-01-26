@@ -84,3 +84,22 @@ document.getElementById('addProductForm').addEventListener('submit', async funct
     //     console.error('Error:', error);
     // }
 });
+
+
+// Product Image Preview 
+document.getElementById('productPicture').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    const previewImg = document.getElementById('previewImg');
+    const imagePreview = document.getElementById('imagePreview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            imagePreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        imagePreview.style.display = 'none';
+    }
+});
