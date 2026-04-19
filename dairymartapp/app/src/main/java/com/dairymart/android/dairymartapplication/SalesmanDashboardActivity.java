@@ -152,7 +152,7 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
                     @Override
                     public void onErrorResponse(VolleyError error) {
 
-                        Toast.makeText(SalesmanDashboardActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SalesmanDashboardActivity.this, error.getMessage() != null ? error.getMessage() : "On Error Response", Toast.LENGTH_SHORT).show();
                     }
                 }) {
             @Override
