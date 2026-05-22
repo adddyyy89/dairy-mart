@@ -12,6 +12,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -45,6 +47,10 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
     LinearLayout nav_activity;
     LinearLayout nav_delivery;
     LinearLayout nav_ledger;
+
+    View fabMenuItems;
+    FloatingActionButton mainFab;
+    boolean isFabExpanded = false;
 
     ListView recentTransactions;
     SalesmanDashboardRecentTransactionAdapter salesmanDashboardRecentTransactionAdapter;
@@ -93,8 +99,23 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
             engagedCrateVal = findViewById(R.id.salesman_dashboard_engagedcrate);
             engagedCrateVal.setText("94");
 
+            fabMenuItems = findViewById(R.id.fab_menu_items);
+            mainFab = findViewById(R.id.main_fab);
 
-
+            mainFab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (isFabExpanded) {
+                        fabMenuItems.setVisibility(View.GONE);
+                        mainFab.setImageResource(android.R.drawable.ic_input_add);
+                        isFabExpanded = false;
+                    } else {
+                        fabMenuItems.setVisibility(View.VISIBLE);
+                        mainFab.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+                        isFabExpanded = true;
+                    }
+                }
+            });
 
             nav_activity.setOnClickListener(new View.OnClickListener() {
                 @Override
