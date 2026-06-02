@@ -88,10 +88,10 @@ public class RetailerActivityOrdersActivity extends AppCompatActivity {
 
         //loadData();
         if(isValidUser) {
-            nav_home = findViewById(R.id.salesman_activity_orders_nav_home);
-            nav_activity = findViewById(R.id.salesman_activity_orders_nav_activity);
-            nav_delivery = findViewById(R.id.salesman_activity_orders_nav_delivery);
-            nav_ledger = findViewById(R.id.salesman_activity_orders_nav_ledger);
+            nav_home = findViewById(R.id.nav_home);
+            nav_activity = findViewById(R.id.nav_activity);
+            nav_delivery = findViewById(R.id.nav_delivery);
+            nav_ledger = findViewById(R.id.nav_ledger);
             createOrderBtn = findViewById(R.id.createOrder);
             retailerOptionsSpinner = findViewById(R.id.retailerSpinner);
 

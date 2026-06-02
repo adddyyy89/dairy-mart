@@ -80,9 +80,9 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
 
             loadData();
 
-            nav_activity = findViewById(R.id.salesman_dashboard_nav_activity);
-            nav_delivery = findViewById(R.id.salesman_dashboard_nav_delivery);
-            nav_ledger = findViewById(R.id.salesman_dashboard_nav_ledger);
+            nav_activity = findViewById(R.id.nav_activity);
+            nav_delivery = findViewById(R.id.nav_delivery);
+            nav_ledger = findViewById(R.id.nav_ledger);
 
             recentTransactions = findViewById(R.id.transactionListView);
 

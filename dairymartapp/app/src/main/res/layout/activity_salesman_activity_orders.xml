@@ -8,132 +8,12 @@
     tools:context=".SalesmanActivityOrdersActivity">
 
     <!-- Bottom Navigation -->
-    <LinearLayout
-        android:id="@+id/bottomNav"
-        android:layout_width="match_parent"
-        android:layout_height="72dp"
-        android:layout_alignParentBottom="true"
-        android:background="#FFFFFF"
-        android:elevation="16dp"
-        android:orientation="horizontal"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
-
-        <LinearLayout
-            android:id="@+id/salesman_activity_orders_nav_home"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/home_24"
-                app:tint="#9AA0A6"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="DASHBOARD"
-                android:textSize="10sp"
-                android:textColor="#9AA0A6"
-                android:layout_marginTop="4dp"
-                android:fontFamily="sans-serif-medium"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/salesman_activity_orders_nav_activity"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/activity_feed_24"
-                app:tint="#1A73E8"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ORDERS"
-                android:textSize="10sp"
-                android:textColor="#1A73E8"
-                android:layout_marginTop="4dp"
-                android:fontFamily="sans-serif-medium"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/salesman_activity_orders_nav_delivery"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/delivered_24"
-                app:tint="#9AA0A6"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="DELIVERIES"
-                android:textSize="10sp"
-                android:textColor="#9AA0A6"
-                android:layout_marginTop="4dp"
-                android:fontFamily="sans-serif-medium"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/salesman_activity_orders_nav_crates"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@android:drawable/ic_menu_view"
-                app:tint="#9AA0A6"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="CRATES"
-                android:textSize="10sp"
-                android:textColor="#9AA0A6"
-                android:layout_marginTop="4dp"
-                android:fontFamily="sans-serif-medium"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/salesman_activity_orders_nav_ledger"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ledger_24"
-                app:tint="#9AA0A6"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="LEDGER"
-                android:textSize="10sp"
-                android:textColor="#9AA0A6"
-                android:layout_marginTop="4dp"
-                android:fontFamily="sans-serif-medium"/>
-        </LinearLayout>
-    </LinearLayout>
+    <include layout="@layout/bottom_navigation_bar" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/bottomNav"
+        android:layout_above="@id/bottom_nav_container"
         android:orientation="vertical">
 
         <LinearLayout
@@ -297,7 +177,9 @@
                         android:layout_height="match_parent"
                         android:iconifiedByDefault="false"
                         android:queryBackground="@android:color/transparent"
-                        android:queryHint="Search shops..."/>
+                        android:queryHint="Search..."
+                        android:theme="@style/SearchViewTheme"
+                        />
                 </androidx.cardview.widget.CardView>
 
                 <androidx.cardview.widget.CardView
