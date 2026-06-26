@@ -45,6 +45,8 @@ public class SalesmanDeliveryPendingActivity extends AppCompatActivity {
         nav_activity = findViewById(R.id.salesman_delivery_nav_activity);
         nav_delivery = findViewById(R.id.salesman_delivery_nav_delivery);
         nav_ledger = findViewById(R.id.salesman_delivery_nav_ledger);
+        TextView pendingTab = findViewById(R.id.pendingTab);
+        TextView deliveredTab = findViewById(R.id.deliveredTab);
 
         nav_home.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -79,6 +81,20 @@ public class SalesmanDeliveryPendingActivity extends AppCompatActivity {
 
                 startActivity(new Intent(SalesmanDeliveryPendingActivity.this, SalesmanLedgerDashboardActivity.class));
 
+            }
+        });
+
+        pendingTab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(SalesmanDeliveryPendingActivity.this, SalesmanDeliveryPendingActivity.class));
+            }
+        });
+
+        deliveredTab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(SalesmanDeliveryPendingActivity.this, SalesmanDeliveryDeliveredActivity.class));
             }
         });
 

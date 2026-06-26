@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -36,6 +37,15 @@ public class MainActivity extends AppCompatActivity {
     Button loginButton;
     //TextView errorTextView;
 
+    private void thisShouldBeSafeEnoughToast(String toastText) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(MainActivity.this, toastText, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -63,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         String baseUrl = properties.getProperty("dairymartServerUrl");
 
         String url = baseUrl + "/auth/login"; // Replace with your API endpoint
-
+        Log.wtf("Login URL", url);
         RequestQueue queue = Volley.newRequestQueue(this);
         StringRequest request = new StringRequest(Request.Method.POST, url,
                 new Response.Listener<String>() {
@@ -86,22 +96,30 @@ public class MainActivity extends AppCompatActivity {
                             Intent intent = null;
                             String userTypeId = String.valueOf(jsonObject.get("role"));
                             if(userTypeId.equalsIgnoreCase("1")) {
-                                Toast.makeText(MainActivity.this, "Admin screen", Toast.LENGTH_SHORT).show();
+                                // Toast.makeText(MainActivity.this, "Admin screen", Toast.LENGTH_SHORT).show();
+                                thisShouldBeSafeEnoughToast("Admin screen");
                                 intent = new Intent(MainActivity.this, AdminDashboardActivity.class);
                             }
                             else if(userTypeId.equalsIgnoreCase("2")) {
-                                Toast.makeText(MainActivity.this, "Salesman screen", Toast.LENGTH_SHORT).show();
+                                // Toast.makeText(MainActivity.this, "Salesman screen", Toast.LENGTH_SHORT).show();
+                                thisShouldBeSafeEnoughToast("Salesman screen");
                                 intent = new Intent(MainActivity.this, SalesmanDashboardActivity.class);
                             }
                             else if(userTypeId.equalsIgnoreCase("3")) {
-                                Toast.makeText(MainActivity.this, "Retailer screen", Toast.LENGTH_SHORT).show();
+                                // Toast.makeText(MainActivity.this, "Retailer screen", Toast.LENGTH_SHORT).show();
+                                thisShouldBeSafeEnoughToast("Retailer screen");
                                 intent = new Intent(MainActivity.this, RetailerDashboardActivity.class);
+                            } else{
+
+                                thisShouldBeSafeEnoughToast("Unknown user type");
+                                 intent = new Intent(MainActivity.this, CommonDashboardActivity.class);
                             }
 
                             startActivity(intent);
                         }
                         catch(JSONException e){
-                            Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                            // thisShouldBeSafeEnoughToast(e.getMessage());
+                            // Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
 
 
@@ -113,7 +131,8 @@ public class MainActivity extends AppCompatActivity {
 
                         // Handle login error
                         //errorTextView.setText(error.getMessage());
-                        Toast.makeText(MainActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
+                        // Toast.makeText(MainActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
+                        thisShouldBeSafeEnoughToast(error.getMessage() != null ? error.getMessage() : "Login failed");
 
                         // Error or not open the next page (REMOVE LATER)
                         // Handle successful login
@@ -138,7 +157,8 @@ public class MainActivity extends AppCompatActivity {
                     reqBody.put("phoneNumber", phoneNumber);
                     reqBody.put("password", password);
                 } catch(JSONException e) {
-                    Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    // Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    thisShouldBeSafeEnoughToast(e.getMessage());
                 }
 
                 return reqBody.toString().getBytes();

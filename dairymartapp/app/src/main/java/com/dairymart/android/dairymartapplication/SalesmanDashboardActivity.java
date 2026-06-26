@@ -12,6 +12,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -46,6 +48,10 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
     LinearLayout nav_delivery;
     LinearLayout nav_ledger;
 
+    View fabMenuItems;
+    FloatingActionButton mainFab;
+    boolean isFabExpanded = false;
+
     ListView recentTransactions;
     SalesmanDashboardRecentTransactionAdapter salesmanDashboardRecentTransactionAdapter;
 
@@ -74,9 +80,9 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
 
             loadData();
 
-            nav_activity = findViewById(R.id.salesman_dashboard_nav_activity);
-            nav_delivery = findViewById(R.id.salesman_dashboard_nav_delivery);
-            nav_ledger = findViewById(R.id.salesman_dashboard_nav_ledger);
+            nav_activity = findViewById(R.id.nav_activity);
+            nav_delivery = findViewById(R.id.nav_delivery);
+            nav_ledger = findViewById(R.id.nav_ledger);
 
             recentTransactions = findViewById(R.id.transactionListView);
 
@@ -93,8 +99,23 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
             engagedCrateVal = findViewById(R.id.salesman_dashboard_engagedcrate);
             engagedCrateVal.setText("94");
 
+            fabMenuItems = findViewById(R.id.fab_menu_items);
+            mainFab = findViewById(R.id.main_fab);
 
-
+            mainFab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (isFabExpanded) {
+                        fabMenuItems.setVisibility(View.GONE);
+                        mainFab.setImageResource(android.R.drawable.ic_input_add);
+                        isFabExpanded = false;
+                    } else {
+                        fabMenuItems.setVisibility(View.VISIBLE);
+                        mainFab.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+                        isFabExpanded = true;
+                    }
+                }
+            });
 
             nav_activity.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -152,7 +173,7 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
                     @Override
                     public void onErrorResponse(VolleyError error) {
 
-                        Toast.makeText(SalesmanDashboardActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SalesmanDashboardActivity.this, error.getMessage() != null ? error.getMessage() : "On Error Response", Toast.LENGTH_SHORT).show();
                     }
                 }) {
             @Override

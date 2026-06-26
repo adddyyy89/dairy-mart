@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error fetching order:', error);
-            document.querySelector('.order-card').innerHTML = 
+            document.querySelector('.order-card').innerHTML =
                 `<div class="alert alert-danger">
                     <strong>Error:</strong> ${error.message}. <br>
                     Make sure your credentials are correct and CORS is enabled on the server.
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function renderOrderData(data) {
-    
+
     const retailerSalesmanDataMap = sessionStorage.getItem("retailerSalesmanDataMap");
     const retailerSalesmanDataMapJSON = JSON.parse(retailerSalesmanDataMap);
     const salesmanId = retailerSalesmanDataMapJSON[data.retailerId].userId;
