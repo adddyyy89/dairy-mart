@@ -38,6 +38,9 @@ public class SalesmanDashboardController {
     @Autowired
     private LedgerService ledgerService;
 
+    @Autowired
+    private UserService userService;
+
 
 
     @GetMapping(value = "/get/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -46,7 +49,7 @@ public class SalesmanDashboardController {
         int salesmanId = Integer.parseInt(userId);
 
         UserWalletDao walletDao = userWalletService.getWalletDetails(salesmanId);
-
+        UserDao userDao = userService.findById(salesmanId);
 
         List<SalesmanOrdersDao> salesmanOrdersDaos = salesmanToRetailService.getCurrentOrdersPlaced(salesmanId);
 
@@ -62,6 +65,8 @@ public class SalesmanDashboardController {
         jsonObject.put("walletbalance", walletDao != null ? walletDao.getBalance() : "??");
         jsonObject.put("ordersplaced", salesmanOrdersDaos.size());
         jsonObject.put("cratesassigned", cratesAssigned);
+        jsonObject.put("salesmanname", userDao.getLastName() + " " + userDao.getLastName());
+        jsonObject.put("salesmanphonenumber", userDao.getPhoneNumber());
         jsonObject.put("recenttransactions", ledgerTransactionsDTOS);
 
         logger.info("Get Salesman dashboard data for salesman: " + userId + ", completed.");
