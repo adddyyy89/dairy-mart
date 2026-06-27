@@ -1,19 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@+id/nav_home"
-        android:icon="@drawable/ic_home"
-        android:title="Home" />
-    <item
-        android:id="@+id/nav_users"
-        android:icon="@drawable/ic_users"
-        android:title="Users" />
-    <item
-        android:id="@+id/nav_orders"
-        android:icon="@drawable/ic_orders"
-        android:title="Orders" />
-    <item
-        android:id="@+id/nav_settings"
-        android:icon="@drawable/ic_settings"
-        android:title="Settings" />
+    <item android:id="@+id/nav_home" android:icon="@drawable/home_24" android:title="DASHBOARD" />
+    <item android:id="@+id/nav_orders" android:icon="@drawable/ic_orders" android:title="ORDERS" />
+    <item android:id="@+id/nav_deliveries" android:icon="@drawable/delivered_24" android:title="DELIVERIES" />
+    <item android:id="@+id/nav_crates" android:icon="@drawable/activity_feed_24" android:title="CRATES" />
+    <item android:id="@+id/nav_ledger" android:icon="@drawable/ledger_24" android:title="LEDGER" />
 </menu>
