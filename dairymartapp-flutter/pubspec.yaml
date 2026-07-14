@@ -1,0 +1,35 @@
+name: dairymart
+description: Dairy Mart - Admin, Salesman & Retailer mobile app
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Networking
+  http: ^1.2.1
+
+  # Local session/token storage (mirrors SharedPreferences "dairymart" prefs in the legacy app)
+  shared_preferences: ^2.2.3
+
+  # State management (lightweight, easy to reason about across the 3 role dashboards)
+  provider: ^6.1.2
+
+  # Formatting currency (₹) and dates the same way the Android app does
+  intl: ^0.19.0
+
+  # Typography - DESIGN.md specifies "Inter" for headline/body/label fonts
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

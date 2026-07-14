@@ -73,11 +73,12 @@ public class RetailOrderService {
     @Transactional
     public RetailOrderDao updateOrder(RetailOrderDTO order) {
 
-        RetailOrderDao orderDao = new RetailOrderDao(order);
-        orderDao.setCreatedon(new Date(System.currentTimeMillis()));
+        Optional<RetailOrderDao> actualRetailOrderOpt = retailOrderRepository.findById(order.getOrderId());
+        RetailOrderDao orderDao = actualRetailOrderOpt.get();
+
         orderDao.setLastUpdated(new Date(System.currentTimeMillis()));
-        orderDao.setOrderDate(new Date(System.currentTimeMillis()));
-        orderDao.setOrderId(order.getOrderId());
+        orderDao.setOrderStatusId(order.getOrderStatusId());
+
 
         // Save Initial Order
         RetailOrderDao savedOrderDao = retailOrderRepository.save(orderDao);
@@ -86,11 +87,12 @@ public class RetailOrderService {
         logger.info("Proceeding with entries for order details..");
 
         // Save order details one at a time
-        for(RetailOrderDetailsDTO dto : order.getOrderDetails()) {
-            dto.setLastUpdated(new Date(System.currentTimeMillis()));
-            dto.setOrderId(savedOrderDao.getOrderId());
-            retailOrderDetailsRepository.save(new RetailOrderDetailsDao(dto));
-            logger.info("Update entry for order Id: {}, product code: {}", dto.getOrderId(), dto.getProductCode());
+        if(order.getOrderDetails() != null) {
+            for(RetailOrderDetailsDTO dto : order.getOrderDetails()) {
+                dto.setLastUpdated(new Date(System.currentTimeMillis()));
+                retailOrderDetailsRepository.save(new RetailOrderDetailsDao(dto));
+                logger.info("Update entry for order Id: {}, product code: {}", dto.getOrderId(), dto.getProductCode());
+            }
         }
 
         logger.info("Retail order details updated successfully.");

@@ -65,7 +65,7 @@ public class SalesmanDashboardController {
         jsonObject.put("walletbalance", walletDao != null ? walletDao.getBalance() : "??");
         jsonObject.put("ordersplaced", salesmanOrdersDaos.size());
         jsonObject.put("cratesassigned", cratesAssigned);
-        jsonObject.put("salesmanname", userDao.getLastName() + " " + userDao.getLastName());
+        jsonObject.put("salesmanname", userDao.getFirstName() + " " + userDao.getLastName());
         jsonObject.put("salesmanphonenumber", userDao.getPhoneNumber());
         jsonObject.put("recenttransactions", ledgerTransactionsDTOS);
 

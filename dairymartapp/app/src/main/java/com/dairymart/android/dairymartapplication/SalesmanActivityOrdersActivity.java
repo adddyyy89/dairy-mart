@@ -45,6 +45,10 @@ public class SalesmanActivityOrdersActivity extends AppCompatActivity {
 
     TextView errorTextView;
 
+    TextView activeOrders;
+
+    TextView totalActiveCrates;
+
     LinearLayout nav_home;
     LinearLayout nav_activity;
     LinearLayout nav_delivery;
@@ -86,6 +90,8 @@ public class SalesmanActivityOrdersActivity extends AppCompatActivity {
         userId = Integer.parseInt(sharedPreferences.getString("userid", null));
         userTypeId = sharedPreferences.getString("usertypeid", null);
 
+        activeOrders = findViewById(R.id.salesman_order_activity_activeorder);
+        totalActiveCrates = findViewById(R.id.salesman_order_activity_totalactivecrates);
         boolean isValidUser = validateUserRole(userTypeId);
 
         selectedRetailerId = "";
@@ -166,6 +172,8 @@ public class SalesmanActivityOrdersActivity extends AppCompatActivity {
                 }
             });
 
+            loadSalesmanCrates();
+
             //
             loadDataRetailerList();
 
@@ -203,6 +211,7 @@ public class SalesmanActivityOrdersActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(String response) {
                         try {
+                            int activeOrderCnt = 0;
                             orders = new JSONArray(response);
                             ArrayList<SalesmanOrderItem> ordersList = new ArrayList<>();
                             for(int indx=0; indx<orders.length(); indx++) {
@@ -212,6 +221,11 @@ public class SalesmanActivityOrdersActivity extends AppCompatActivity {
 
                                 orderItem.setOrderId(order.getInt("orderId"));
                                 orderItem.setOrderStatusId(order.getJSONObject("status").getInt("statusId"));
+                                if(order.getJSONObject("status").getString("statusDesc") == "NEW"
+                                    || order.getJSONObject("status").getString("statusDesc") == "CONFIRMED"
+                                    || order.getJSONObject("status").getString("statusDesc") == "DISPATCHED") {
+                                    activeOrderCnt++;
+                                }
                                 orderItem.setOrderTimestamp(order.getString("createdon"));
                                 orderItem.setOrderStatusMessage(order.getJSONObject("status").getString("statusDesc"));
                                 orderItem.setRetailerName(order.getJSONObject("retailer").getString("shopName"));
@@ -241,7 +255,43 @@ public class SalesmanActivityOrdersActivity extends AppCompatActivity {
                             orderItemAdapter = new SalesmanOrderItemAdapter(context, ordersList);
                             ordersListView.setAdapter(orderItemAdapter);
 
+                            activeOrders.setText(String.valueOf(activeOrderCnt));
                         } catch (JSONException e) {
+                            Toast.makeText(SalesmanActivityOrdersActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+
+                        Toast.makeText(SalesmanActivityOrdersActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                SharedPreferences sharedPreferences = getSharedPreferences("dairymart", Context.MODE_PRIVATE);
+                headers.put("Authorization", sharedPreferences.getString("auth", null));
+                return headers;
+            }
+        };
+        queue.add(request);
+    }
+
+    private void loadSalesmanCrates() {
+        String baseUrl = properties.getProperty("dairymartServerUrl");
+        String url = baseUrl + "/crate/assigned/user/" + userId; // Replace with your API endpoint
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+        StringRequest request = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            String activeCrate = String.valueOf(response);
+                            totalActiveCrates.setText(activeCrate);
+                        } catch (Exception e) {
                             Toast.makeText(SalesmanActivityOrdersActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     }

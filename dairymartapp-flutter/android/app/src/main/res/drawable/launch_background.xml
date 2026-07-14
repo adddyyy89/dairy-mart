@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shown behind the Flutter engine while it warms up, before the Dart-side
+     splash in main.dart (_SplashRouter) takes over. Matches AppColors.primary
+     (#1A73E8) so there's no color flash on cold start. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/launch_background_color" />
+</layer-list>
