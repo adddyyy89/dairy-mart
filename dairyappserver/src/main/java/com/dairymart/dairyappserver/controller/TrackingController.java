@@ -59,7 +59,7 @@ public class TrackingController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(gson.toJson("Unable to parse date"));
         }
         logger.info("update tracking location completed successfully.");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(gson.toJson(new TrackingDTO(trackingDao)));
+        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new TrackingDTO(trackingDao)));
 
     }
 

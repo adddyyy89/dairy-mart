@@ -1,3 +1,5 @@
+import '../utils/json_unwrap.dart';
+
 /// Maps to LedgerDTO - the running account between one salesman and one retailer.
 class Ledger {
   final int ledgerId;
@@ -17,14 +19,14 @@ class Ledger {
   });
 
   factory Ledger.fromJson(Map<String, dynamic> json) {
-    final retailer = json['retailer'] as Map<String, dynamic>?;
-    final salesman = json['salesman'] as Map<String, dynamic>?;
+    final retailer = asMap(json['retailer']);
+    final salesman = asMap(json['salesman']);
     return Ledger(
-      ledgerId: json['ledgerId'] ?? 0,
-      salesmanId: json['salesmanId'] ?? 0,
-      retailerId: json['retailerId'] ?? 0,
-      retailerName: retailer?['firstName'],
-      salesmanName: salesman?['firstName'],
+      ledgerId: asInt(json['ledgerId']),
+      salesmanId: asInt(json['salesmanId']),
+      retailerId: asInt(json['retailerId']),
+      retailerName: retailer['firstName']?.toString(),
+      salesmanName: salesman['firstName']?.toString(),
       active: json['active'] ?? true,
     );
   }
@@ -55,16 +57,14 @@ class LedgerTransaction {
   double get signedAmount => isDebit ? -amount : amount;
 
   factory LedgerTransaction.fromJson(Map<String, dynamic> json) {
-    final paymentType = json['paymentType'] as Map<String, dynamic>?;
+    final paymentType = asMap(json['paymentType']);
     return LedgerTransaction(
-      transactionId: json['transactionsId'] ?? 0,
-      ledgerId: json['ledgerId'] ?? 0,
-      amount: (json['amount'] is num)
-          ? (json['amount'] as num).toDouble()
-          : double.tryParse(json['amount']?.toString() ?? '0') ?? 0,
+      transactionId: asInt(json['transactionsId']),
+      ledgerId: asInt(json['ledgerId']),
+      amount: asDouble(json['amount']),
       isCredit: json['credit'] ?? false,
       isDebit: json['debit'] ?? false,
-      paymentTypeDesc: paymentType?['paymentTypeDesc'],
+      paymentTypeDesc: paymentType['paymentTypeDesc']?.toString(),
       createdOn: DateTime.tryParse(json['createdOn']?.toString() ?? '') ??
           DateTime.now(),
     );

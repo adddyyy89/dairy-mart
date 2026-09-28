@@ -9,12 +9,13 @@ class ApiConfig {
 
   static const String baseUrl = String.fromEnvironment(
     'DAIRYMART_API_BASE_URL',
-    defaultValue: 'http://localhost:8080',
+    defaultValue: 'http://10.50.90.169:8080',
   );
 
   // Auth
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';
+  static const String resetPassword = '/auth/reset';
 
   // User
   static const String userAdd = '/user/add';
@@ -28,11 +29,13 @@ class ApiConfig {
   static String shopGet(int id) => '/shop/get/$id';
   static const String shopGetAll = '/shop/get/all';
   static String shopGetByUser(int userId) => '/shop/get/user/$userId';
+  static const String shopUpdate = '/shop/update';
 
   // Product catalog
   static const String productAdd = '/product/add';
   static const String productUpdate = '/product/update';
   static const String productGetAll = '/product/getall';
+  static const String orderProducts = '/retailorder/get/all/products';
   static String productGetById(int id) => '/product/get/$id';
   static String productGetByType(int typeId) =>
       '/product/get/producttype/$typeId';
@@ -61,11 +64,18 @@ class ApiConfig {
       '/retailer/dashboard/get/$userId';
 
   // Ledger
-  static const String ledgerUnassigned = '/ledger/get/unassigned';
-  static String ledgerForSalesman(int salesmanId) =>
-      '/ledger/salesman/get/$salesmanId';
+  static String salesmanLedgerDashboard(int userId) =>
+      '/salesman/ledger/dashboard/get/$userId';
+  static String ledgerUnassigned(int userId) =>
+      '/ledger/get/unassigned/$userId';
+  static String ledgerById(int ledgerId) => '/ledger/salesman/get/$ledgerId';
   static const String ledgerSalesmanUpdate = '/ledger/salesman/update';
   static const String ledgerAdd = '/ledger/add';
+
+  // GPS tracking (public.tracking)
+  static const String trackingUpdate = '/tracking/update';
+  static String trackingGet(int userId, String date) =>
+      '/tracking/get?userId=$userId&date=$date';
 
   // Orders
   static const String orderAdd = '/retailorder/add';

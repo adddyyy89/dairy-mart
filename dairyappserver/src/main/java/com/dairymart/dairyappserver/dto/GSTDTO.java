@@ -42,6 +42,9 @@ public class GSTDTO {
         this.panNumber = panNumber;
     }
 
+    public GSTDTO() {
+    }
+
     public GSTDTO(int gstId, String gstNumber, String aadharNumber, String panNumber) {
         this.gstId = gstId;
         this.gstNumber = gstNumber;

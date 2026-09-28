@@ -6,6 +6,7 @@ import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/status_chip.dart';
+import '../salesman/order_details_screen.dart';
 
 /// Retailer's own order history - GET /retailorder/get/retailer/{id}.
 class RetailerOrdersScreen extends StatefulWidget {
@@ -84,7 +85,13 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
                     itemBuilder: (context, i) {
                       final order = _orders[i];
                       return Card(
-                        child: Padding(
+                        child: InkWell(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => OrderDetailsScreen(order: order)),
+                          ),
+                          child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,6 +114,7 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
                                   style: const TextStyle(fontWeight: FontWeight.bold)),
                             ],
                           ),
+                        ),
                         ),
                       );
                     },

@@ -1,3 +1,5 @@
+import '../utils/json_unwrap.dart';
+
 /// Maps to RetailOrderDetailsDTO
 class OrderLineItem {
   final String productCode;
@@ -111,24 +113,24 @@ class RetailOrder {
       0, (sum, item) => sum + (double.tryParse(item.quantity) ?? 0).round());
 
   factory RetailOrder.fromJson(Map<String, dynamic> json) {
-    final retailer = json['retailer'] as Map<String, dynamic>?;
-    final status = json['status'] as Map<String, dynamic>?;
-    final details = (json['orderDetails'] as List<dynamic>?) ?? [];
+    final retailer = asMap(json['retailer']);
+    final status = asMap(json['status']);
+    final details = asList(json['orderDetails']);
 
     return RetailOrder(
       orderId: json['orderId'] ?? 0,
       orderDate: DateTime.tryParse(json['orderDate']?.toString() ?? '') ??
           DateTime.now(),
-      retailerId: json['retailerId'] ?? 0,
-      retailerShopName: retailer?['shopName'],
-      branchId: json['branchId'] ?? 0,
-      createdBy: json['createdBy'] ?? 0,
-      orderStatusId: json['orderStatusId'] ?? 0,
-      statusDescription: status != null
+      retailerId: asInt(json['retailerId']),
+      retailerShopName: retailer['shopName']?.toString(),
+      branchId: asInt(json['branchId']),
+      createdBy: asInt(json['createdBy']),
+      orderStatusId: asInt(json['orderStatusId'] ?? status['statusId']),
+      statusDescription: status.isNotEmpty
           ? OrderStatus.fromJson(status).description
           : 'NEW',
       orderDetails:
-          details.map((d) => OrderLineItem.fromJson(d)).toList(growable: false),
+          details.map((d) => OrderLineItem.fromJson(asMap(d))).toList(growable: false),
     );
   }
 

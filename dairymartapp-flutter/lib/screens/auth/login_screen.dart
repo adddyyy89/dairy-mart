@@ -3,6 +3,7 @@ import '../../models/user.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/phone_input.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../retailer/retailer_dashboard_screen.dart';
 import '../salesman/salesman_dashboard_screen.dart';
@@ -36,8 +37,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final phone = _phoneController.text.trim();
     final password = _passwordController.text;
 
-    if (phone.isEmpty || password.isEmpty) {
-      setState(() => _errorText = 'Enter both phone number and password.');
+    if (!isValidPhoneNumber(phone) || password.isEmpty) {
+      setState(() => _errorText =
+          'Enter a 10-digit phone number and password.');
       return;
     }
 
@@ -50,6 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final session = await AuthService.instance
           .login(phoneNumber: phone, password: password);
       if (!mounted) return;
+      if (session.role == UserRole.unknown) {
+        setState(() => _errorText = 'Unknown user role. Contact admin.');
+        return;
+      }
       _routeByRole(session.role);
     } on ApiException catch (e) {
       setState(() => _errorText = e.message);
@@ -65,11 +71,66 @@ class _LoginScreenState extends State<LoginScreen> {
       UserRole.admin => const AdminDashboardScreen(),
       UserRole.salesman => const SalesmanDashboardScreen(),
       UserRole.retailer => const RetailerDashboardScreen(),
-      UserRole.unknown => const SalesmanDashboardScreen(),
+      UserRole.unknown => const LoginScreen(),
     };
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => destination),
     );
+  }
+
+  Future<void> _resetPassword() async {
+    final phone = TextEditingController(text: _phoneController.text.trim());
+    final password = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: phone,
+              keyboardType: TextInputType.number,
+              maxLength: phoneNumberMaxLength,
+              inputFormatters: phoneNumberFormatters,
+              decoration: const InputDecoration(
+                labelText: 'Phone number',
+                counterText: '',
+              ),
+            ),
+            TextField(
+              controller: password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'New password'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Update')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await AuthService.instance.resetPassword(
+        phoneNumber: phone.text.trim(),
+        newPassword: password.text,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Password updated. Sign in with the new password.')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not reset password.')));
+      }
+    }
   }
 
   @override
@@ -134,19 +195,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    _FieldLabel('PHONE NUMBER'),
+                    const _FieldLabel('PHONE NUMBER'),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _phoneController,
-                      keyboardType: TextInputType.phone,
+                      keyboardType: TextInputType.number,
+                      maxLength: phoneNumberMaxLength,
+                      inputFormatters: phoneNumberFormatters,
                       decoration: const InputDecoration(
-                        hintText: 'Enter your mobile number',
+                        hintText: '10-digit mobile number',
+                        counterText: '',
                         prefixIcon: Icon(Icons.call_outlined,
                             color: AppColors.textMuted),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    _FieldLabel('PASSWORD'),
+                    const _FieldLabel('PASSWORD'),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _passwordController,
@@ -191,12 +255,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           : const Text('Log In'),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    TextButton(
+                      onPressed: _isLoading ? null : _resetPassword,
+                      child: const Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],

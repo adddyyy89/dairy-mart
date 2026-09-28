@@ -3,9 +3,14 @@ import '../../services/api_client.dart';
 import '../../services/api_config.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/json_unwrap.dart';
+import '../../widgets/load_error.dart';
 import '../../widgets/stat_card.dart';
 import '../auth/login_screen.dart';
 import '../../services/session_manager.dart';
+import 'admin_ledgers_screen.dart';
+import 'admin_products_screen.dart';
+import 'admin_users_screen.dart';
 
 /// Lightweight admin overview - GET /admin/dashboard/get, with quick links
 /// to user management and ledgers (/admin/users/get, /admin/ledgers/get).
@@ -21,6 +26,7 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool _isLoading = true;
+  String? _error;
   Map<String, dynamic>? _summary;
 
   @override
@@ -40,12 +46,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final json = await ApiClient.instance.get(ApiConfig.adminDashboard);
-      if (mounted && json is Map<String, dynamic>) setState(() => _summary = json);
+      if (mounted) setState(() => _summary = asMap(json));
     } catch (_) {
-      // real app: show retry state
+      if (mounted) setState(() => _error = 'Could not load admin dashboard.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -73,7 +82,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : _error != null
+              ? LoadError(message: _error!, onRetry: _load)
+              : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -81,23 +92,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   StatCardGrid(cards: [
                     StatCard(
                       icon: Icons.people_outline,
-                      label: 'Total Users',
-                      value: '${_summary?['totalUsers'] ?? '-'}',
-                    ),
-                    StatCard(
-                      icon: Icons.storefront_outlined,
                       label: 'Retailers',
                       value: '${_summary?['totalRetailers'] ?? '-'}',
                     ),
                     StatCard(
                       icon: Icons.badge_outlined,
                       label: 'Salesmen',
-                      value: '${_summary?['totalSalesmen'] ?? '-'}',
+                      value: '${_summary?['totalSalesman'] ?? '-'}',
                     ),
                     StatCard(
                       icon: Icons.receipt_long_outlined,
                       label: 'Orders Today',
-                      value: '${_summary?['ordersToday'] ?? '-'}',
+                      value: '${_summary?['totalTodaysOrder'] ?? '-'}',
+                    ),
+                    StatCard(
+                      icon: Icons.swap_horiz,
+                      label: 'Txns Today',
+                      value: '${_summary?['totalTodaysTransactions'] ?? '-'}',
                     ),
                   ]),
                   const SizedBox(height: 24),
@@ -109,7 +120,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       leading: const Icon(Icons.people_outline, color: AppColors.primary),
                       title: const Text('Users'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const AdminUsersScreen())),
                     ),
                   ),
                   Card(
@@ -118,7 +130,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           const Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary),
                       title: const Text('Ledgers'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const AdminLedgersScreen())),
                     ),
                   ),
                   Card(
@@ -126,7 +139,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       leading: const Icon(Icons.inventory_2_outlined, color: AppColors.primary),
                       title: const Text('Products'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const AdminProductsScreen())),
                     ),
                   ),
                 ],

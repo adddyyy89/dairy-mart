@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../models/order.dart';
 import '../../models/product.dart';
+import '../../services/api_client.dart';
+import '../../services/assignment_service.dart';
 import '../../services/order_service.dart';
 import '../../services/product_service.dart';
 import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/load_error.dart';
 
-/// Retailer-facing product catalog + order builder. Uses the same
-/// GET /product/get catalog as the salesman's create-order screen, then
-/// posts to /retailorder/add with the retailer's own id.
 class RetailerCatalogScreen extends StatefulWidget {
   const RetailerCatalogScreen({super.key});
 
@@ -17,9 +17,11 @@ class RetailerCatalogScreen extends StatefulWidget {
   State<RetailerCatalogScreen> createState() => _RetailerCatalogScreenState();
 }
 
-class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
+class _RetailerCatalogScreenState extends State<RetailerCatalogScreen>
+    with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _isSubmitting = false;
+  String? _error;
   List<Product> _products = [];
   final Map<int, int> _cart = {};
   String _query = '';
@@ -27,25 +29,52 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _load();
+    }
+  }
+
   Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final products = await ProductService.instance.getAllProducts();
+      final products =
+          await ProductService.instance.getAllProducts(forceRefresh: true);
       if (mounted) setState(() => _products = products);
-    } catch (_) {
-      // real app: show retry state
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e is ApiException
+              ? e.message
+              : 'Could not load products. Check the API URL and retry.';
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  List<Product> get _filtered => _query.isEmpty
-      ? _products
-      : _products
-          .where((p) => p.productName.toLowerCase().contains(_query.toLowerCase()))
-          .toList();
+  List<Product> get _filtered {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return _products;
+    return _products
+        .where((p) => p.productName.toLowerCase().contains(q))
+        .toList();
+  }
 
   double get _total {
     double sum = 0;
@@ -59,12 +88,18 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
 
   Future<void> _placeOrder() async {
     final session = SessionManager.instance.current;
-    if (session == null) return;
+    if (session == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please sign in again.')));
+      return;
+    }
 
     final items = _products
         .where((p) => (_cart[p.productId] ?? 0) > 0)
         .map((p) => OrderLineItem(
-              productCode: p.productCode,
+              productCode: p.productCode.isNotEmpty
+                  ? p.productCode
+                  : p.productId.toString(),
               quantity: (_cart[p.productId] ?? 0).toString(),
               unit: p.unit,
               saleRate: p.saleRate,
@@ -73,25 +108,35 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
             ))
         .toList();
 
-    if (items.isEmpty) return;
+    if (items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Add at least one product.')));
+      return;
+    }
 
     setState(() => _isSubmitting = true);
     try {
+      final shop = await AssignmentService.instance
+          .getOrderShopForRetailer(session.userId);
       await OrderService.instance.createOrder(
-        retailerId: session.userId,
-        branchId: 0, // TODO: populate from the retailer's shop/branch profile
+        retailerId: shop.shopId,
+        branchId: shop.branchId,
         createdBy: session.userId,
         items: items,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Order placed successfully.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Order placed successfully.')));
         Navigator.pop(context);
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Could not place order.')));
+        final message = e is ApiException ? e.message : e.toString();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  message.isEmpty ? 'Could not place order.' : message)),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -101,72 +146,112 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Order')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('New Order'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh products',
+            onPressed: _isLoading ? null : _load,
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Search products...',
-                      prefixIcon: Icon(Icons.search),
+          : _error != null
+              ? LoadError(message: _error!, onRetry: _load)
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          hintText: 'Search products...',
+                          prefixIcon: Icon(Icons.search),
+                        ),
+                        onChanged: (v) => setState(() => _query = v),
+                      ),
                     ),
-                    onChanged: (v) => setState(() => _query = v),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _load,
+                        child: _filtered.isEmpty
+                            ? ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: [
+                                  const SizedBox(height: 120),
+                                  Center(
+                                    child: Text(
+                                      _products.isEmpty
+                                          ? 'No products returned by the server.'
+                                          : 'No products match your search.',
+                                      style: const TextStyle(
+                                          color: AppColors.textMuted),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                itemCount: _filtered.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (context, i) {
+                                  final product = _filtered[i];
+                                  return _ProductRow(
+                                    product: product,
+                                    quantity: _cart[product.productId] ?? 0,
+                                    onChanged: (delta) => setState(() {
+                                      _cart[product.productId] =
+                                          ((_cart[product.productId] ?? 0) +
+                                                  delta)
+                                              .clamp(0, 999);
+                                    }),
+                                  );
+                                },
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+      bottomNavigationBar: Material(
+        color: AppColors.surface,
+        elevation: 8,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('$_cartCount items',
+                          style: const TextStyle(color: AppColors.textSecondary)),
+                      Text(formatCurrency(_total),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
-                Expanded(
-                  child: GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 0.85,
-                    ),
-                    itemCount: _filtered.length,
-                    itemBuilder: (context, i) => _CatalogCard(
-                      product: _filtered[i],
-                      quantity: _cart[_filtered[i].productId] ?? 0,
-                      onChanged: (delta) => setState(() {
-                        final id = _filtered[i].productId;
-                        _cart[id] = ((_cart[id] ?? 0) + delta).clamp(0, 999);
-                      }),
-                    ),
-                  ),
+                FilledButton(
+                  onPressed:
+                      _cartCount == 0 || _isSubmitting ? null : _placeOrder,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Text('Place Order'),
                 ),
               ],
             ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            boxShadow: [BoxShadow(color: Color(0x1A000000), blurRadius: 8)],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('$_cartCount items', style: const TextStyle(color: AppColors.textSecondary)),
-                    Text(formatCurrency(_total),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-              FilledButton(
-                onPressed: _cartCount == 0 || _isSubmitting ? null : _placeOrder,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Place Order'),
-              ),
-            ],
           ),
         ),
       ),
@@ -174,67 +259,58 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
   }
 }
 
-class _CatalogCard extends StatelessWidget {
+class _ProductRow extends StatelessWidget {
   final Product product;
   final int quantity;
   final ValueChanged<int> onChanged;
 
-  const _CatalogCard({required this.product, required this.quantity, required this.onChanged});
+  const _ProductRow({
+    required this.product,
+    required this.quantity,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: quantity > 0 ? AppColors.primaryLight : AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Container(
-              height: 64,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceMuted,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const Icon(Icons.local_drink_outlined, color: AppColors.primary, size: 32),
-            ),
-            const SizedBox(height: 8),
-            Text(product.productName,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-            Text(product.displayQuantity,
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-            const Spacer(),
-            Text(formatCurrency(product.saleRate),
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            quantity == 0
-                ? SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => onChanged(1),
-                      child: const Text('Add'),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.remove_circle_outline),
-                        color: AppColors.primary,
-                        onPressed: () => onChanged(-1),
-                      ),
-                      Text('$quantity'),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.add_circle_outline),
-                        color: AppColors.primary,
-                        onPressed: () => onChanged(1),
-                      ),
-                    ],
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.productName.isEmpty
+                        ? product.productCode
+                        : product.productName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
+                  Text(
+                    '${product.displayQuantity} • ${formatCurrency(product.saleRate)}',
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.remove_circle_outline),
+              color: AppColors.primary,
+              onPressed: quantity > 0 ? () => onChanged(-1) : null,
+            ),
+            SizedBox(
+              width: 24,
+              child: Text('$quantity', textAlign: TextAlign.center),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              color: AppColors.primary,
+              onPressed: () => onChanged(1),
+            ),
           ],
         ),
       ),

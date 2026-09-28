@@ -1,21 +1,6 @@
-/// The backend serializes this endpoint's DTOs as raw maps - every object,
-/// including nested ones (ledger, retailer, salesman, type, paymentType),
-/// arrives wrapped as {"map": {...actual fields...}} instead of a clean
-/// POJO shape. `_unwrap` strips that one consistent layer wherever it shows
-/// up. This is specific to this endpoint - other endpoints (e.g. /auth/login)
-/// return normal unwrapped JSON.
-Map<String, dynamic> _unwrap(dynamic node) {
-  if (node is Map) {
-    final map = Map<String, dynamic>.from(node);
-    if (map.containsKey('map') && map['map'] is Map) {
-      return Map<String, dynamic>.from(map['map'] as Map);
-    }
-    return map;
-  }
-  return {};
-}
+import '../utils/json_unwrap.dart';
 
-/// One entry from `recenttransactions.myArrayList`.
+/// One entry from `recenttransactions`.
 class RecentTransaction {
   final int transactionId;
   final double amount;
@@ -36,8 +21,8 @@ class RecentTransaction {
   double get signedAmount => isCredit ? amount : -amount;
 
   factory RecentTransaction.fromJson(Map<String, dynamic> json) {
-    final ledger = _unwrap(json['ledger']);
-    final retailer = _unwrap(ledger['retailer']);
+    final ledger = asMap(json['ledger']);
+    final retailer = asMap(ledger['retailer']);
 
     // The retailer object here is the User record (firstName/lastName), not
     // the Shop record - there's no shopName in this payload. If you need the
@@ -82,7 +67,7 @@ class SalesmanDashboardSummary {
   });
 
   factory SalesmanDashboardSummary.fromJson(Map<String, dynamic> raw) {
-    final json = _unwrap(raw.containsKey('map') ? raw : {'map': raw});
+    final json = asMap(raw);
 
     double parseAmount(dynamic v) {
       if (v == null) return 0;
@@ -90,19 +75,14 @@ class SalesmanDashboardSummary {
       return double.tryParse(v.toString()) ?? 0;
     }
 
-    final txContainer = json['recenttransactions'];
-    final txList = (txContainer is Map && txContainer['myArrayList'] is List)
-        ? txContainer['myArrayList'] as List
-        : const [];
-
     return SalesmanDashboardSummary(
       salesmanName: json['salesmanname']?.toString() ?? '',
       salesmanPhoneNumber: json['salesmanphonenumber']?.toString() ?? '',
-      cratesAssigned: json['cratesassigned'] ?? 0,
+      cratesAssigned: asInt(json['cratesassigned']),
       walletBalance: parseAmount(json['walletbalance']),
-      ordersPlaced: json['ordersplaced'] ?? 0,
-      recentTransactions: txList
-          .map((e) => RecentTransaction.fromJson(_unwrap(e)))
+      ordersPlaced: asInt(json['ordersplaced']),
+      recentTransactions: asList(json['recenttransactions'])
+          .map((e) => RecentTransaction.fromJson(asMap(e)))
           .toList(growable: false),
     );
   }

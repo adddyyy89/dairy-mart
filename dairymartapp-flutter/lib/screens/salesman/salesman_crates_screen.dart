@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../models/crate.dart';
+import '../../services/assignment_service.dart';
 import '../../services/crate_service.dart';
 import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/load_error.dart';
 import '../../widgets/stat_card.dart';
 import 'salesman_activity_orders_screen.dart';
 import 'salesman_dashboard_screen.dart';
@@ -23,6 +25,7 @@ class SalesmanCratesScreen extends StatefulWidget {
 
 class _SalesmanCratesScreenState extends State<SalesmanCratesScreen> {
   bool _isLoading = true;
+  String? _error;
   CrateRecord? _own;
   List<CrateRecord> _assigned = [];
 
@@ -35,18 +38,40 @@ class _SalesmanCratesScreenState extends State<SalesmanCratesScreen> {
   Future<void> _load() async {
     final session = SessionManager.instance.current;
     if (session == null) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final own = await CrateService.instance.getCratesForUser(session.userId);
-      final assigned = await CrateService.instance.getAssignedToUser(session.userId);
+      final assignments =
+          await AssignmentService.instance.getForSalesman(session.userId);
+      final perRetailer = <CrateRecord>[];
+      for (final a in assignments) {
+        if (a.retailerUserId <= 0) continue;
+        try {
+          final crate =
+              await CrateService.instance.getCratesForUser(a.retailerUserId);
+          if (crate != null) {
+            perRetailer.add(CrateRecord(
+              userId: crate.userId,
+              crateCount: crate.crateCount,
+              crateReceived: crate.crateReceived,
+              crateReturned: crate.crateReturned,
+              recordedAt: crate.recordedAt,
+              holderName: a.shopName,
+            ));
+          }
+        } catch (_) {}
+      }
       if (mounted) {
         setState(() {
           _own = own;
-          _assigned = assigned;
+          _assigned = perRetailer;
         });
       }
     } catch (_) {
-      // real app: show retry state
+      if (mounted) setState(() => _error = 'Could not load crates.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -118,7 +143,9 @@ class _SalesmanCratesScreenState extends State<SalesmanCratesScreen> {
       bottomNavigationBar: AppBottomNav(currentIndex: 3, onTap: _onNavTap),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : _error != null
+              ? LoadError(message: _error!, onRetry: _load)
+              : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
                 padding: const EdgeInsets.all(16),

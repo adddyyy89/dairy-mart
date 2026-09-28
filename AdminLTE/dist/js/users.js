@@ -69,6 +69,7 @@ async function getData() {
                     <td>${user.map.phoneNumber}</td>
                     <td>${user.map.emailId}</td>
                     <td>${user.map.address.map.fullAddress}</td>
+                    <td><span class="badge ${user.map.active !== false ? 'bg-success' : 'bg-secondary'}">${user.map.active !== false ? 'Active' : 'Inactive'}</span></td>
                 </tr>
       `;
         }
@@ -81,6 +82,7 @@ async function getData() {
                     <td>${user.map.phoneNumber}</td>
                     <td>${user.map.emailId}</td>
                     <td>${user.map.address.map.fullAddress}</td>
+                    <td><span class="badge ${user.map.active !== false ? 'bg-success' : 'bg-secondary'}">${user.map.active !== false ? 'Active' : 'Inactive'}</span></td>
                 </tr>
       `;
         }

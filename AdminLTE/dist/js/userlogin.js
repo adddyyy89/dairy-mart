@@ -4,13 +4,34 @@ const dummy_user = {
     password: 'admin'
 }
 
+function restrictPhoneInput(input) {
+  if (!input) return;
+  input.setAttribute('maxlength', '10');
+  input.setAttribute('inputmode', 'numeric');
+  input.setAttribute('pattern', '[0-9]{10}');
+  input.addEventListener('input', () => {
+    input.value = String(input.value || '').replace(/\D/g, '').slice(0, 10);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  restrictPhoneInput(document.getElementById('phoneNumber'));
+});
+
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const alertDiv = document.getElementById('alertMessage');
       
     const loginData = {
-        phoneNumber: document.getElementById('phoneNumber').value,
+        phoneNumber: document.getElementById('phoneNumber').value.replace(/\D/g, ''),
         password: document.getElementById('loginPassword').value
+    }
+
+    if (!/^\d{10}$/.test(loginData.phoneNumber)) {
+        alertDiv.className = 'alert alert-danger mt-3';
+        alertDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i> Phone number must be 10 digits.';
+        alertDiv.style.display = 'block';
+        return;
     }
 
     // login using dummy data, REMOVE BEFORE PRODUCTION
@@ -18,6 +39,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     if(loginData.phoneNumber === dummy_user.phoneNumber && loginData.password === dummy_user.password){
         const dummyUser = {
             phoneNumber: loginData.phoneNumber,
+            password: loginData.password,
             name:'Admin Kumar',
             isActive: true
         }
@@ -57,6 +79,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         }
 
         if(responseData.isActive){
+            responseData.password = loginData.password;
             localStorage.setItem('user',JSON.stringify(responseData))
             sessionStorage.setItem('isLoggedIn','true');
             sessionStorage.setItem('user',JSON.stringify(responseData));

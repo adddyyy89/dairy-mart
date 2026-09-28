@@ -1,3 +1,5 @@
+import '../utils/json_unwrap.dart';
+
 /// Maps to CrateDTO (dairyappserver/dto/CrateDTO.java)
 class CrateRecord {
   final int userId;
@@ -20,17 +22,17 @@ class CrateRecord {
   int get engaged => crateReceived - crateReturned;
 
   factory CrateRecord.fromJson(Map<String, dynamic> json) {
-    final user = json['user'] as Map<String, dynamic>?;
+    final user = asMap(json['user']);
     return CrateRecord(
-      userId: json['userId'] ?? 0,
-      crateCount: json['crateCount'] ?? 0,
-      crateReceived: json['crateReceived'] ?? 0,
-      crateReturned: json['crateReturned'] ?? 0,
+      userId: asInt(json['userId']),
+      crateCount: asInt(json['crateCount']),
+      crateReceived: asInt(json['crateReceived']),
+      crateReturned: asInt(json['crateReturned']),
       recordedAt: DateTime.tryParse(json['recordTimestamp']?.toString() ?? '') ??
           DateTime.now(),
-      holderName: user != null
-          ? '${user['firstName'] ?? ''} ${user['lastName'] ?? ''}'.trim()
-          : null,
+      holderName: user.isEmpty
+          ? null
+          : '${user['firstName'] ?? ''} ${user['lastName'] ?? ''}'.trim(),
     );
   }
 

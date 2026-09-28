@@ -27,6 +27,25 @@ public class ProductService {
     }
 
     public ProductDao createProduct(ProductDao product) {
+        product.setProductId(0);
+        Date now = new Date(System.currentTimeMillis());
+        if (product.getCreatedon() == null) {
+            product.setCreatedon(now);
+        }
+        product.setLastUpdated(now);
+        if (product.getActive() == null) {
+            product.setActive(true);
+        }
+        if (product.getProductCode() == null || product.getProductCode().isBlank()) {
+            String base = product.getProductName() == null ? "PROD" : product.getProductName().replaceAll("[^A-Za-z0-9]", "");
+            if (base.length() > 8) {
+                base = base.substring(0, 8);
+            }
+            if (base.isEmpty()) {
+                base = "PROD";
+            }
+            product.setProductCode(base.toUpperCase() + "-" + (System.currentTimeMillis() % 100000));
+        }
         return productRepository.save(product);
     }
 

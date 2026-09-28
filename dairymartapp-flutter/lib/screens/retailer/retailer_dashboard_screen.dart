@@ -5,9 +5,11 @@ import '../../services/session_manager.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
-import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/load_error.dart';
+import '../../widgets/retailer_bottom_nav.dart';
 import '../../widgets/stat_card.dart';
 import '../auth/login_screen.dart';
+import '../profile_screen.dart';
 import 'retailer_catalog_screen.dart';
 import 'retailer_ledger_screen.dart';
 import 'retailer_orders_screen.dart';
@@ -26,6 +28,7 @@ class RetailerDashboardScreen extends StatefulWidget {
 
 class _RetailerDashboardScreenState extends State<RetailerDashboardScreen> {
   bool _isLoading = true;
+  String? _error;
   DashboardStats? _stats;
   String _firstName = '';
 
@@ -57,7 +60,10 @@ class _RetailerDashboardScreenState extends State<RetailerDashboardScreen> {
   Future<void> _load() async {
     final session = SessionManager.instance.current;
     if (session == null) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final stats =
           await DashboardService.instance.getRetailerDashboard(session.userId);
@@ -69,10 +75,16 @@ class _RetailerDashboardScreenState extends State<RetailerDashboardScreen> {
         });
       }
     } catch (_) {
-      // real app: surface retry state
+      if (mounted) setState(() => _error = 'Could not load dashboard.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _openCatalog() async {
+    await Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const RetailerCatalogScreen()));
+    if (mounted) await _load();
   }
 
   void _onNavTap(int index) {
@@ -83,7 +95,10 @@ class _RetailerDashboardScreenState extends State<RetailerDashboardScreen> {
         Navigator.push(context,
             MaterialPageRoute(builder: (_) => const RetailerOrdersScreen()));
         break;
-      case 4:
+      case 2:
+        _openCatalog();
+        break;
+      case 3:
         Navigator.push(context,
             MaterialPageRoute(builder: (_) => const RetailerLedgerScreen()));
         break;
@@ -98,8 +113,11 @@ class _RetailerDashboardScreenState extends State<RetailerDashboardScreen> {
       appBar: AppBar(
         title: const Text('Dairy Mart'),
         actions: [
-          IconButton(icon: const Icon(Icons.person_outline), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.notifications_none_rounded), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
@@ -107,17 +125,18 @@ class _RetailerDashboardScreenState extends State<RetailerDashboardScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: AppBottomNav(currentIndex: 0, onTap: _onNavTap),
+      bottomNavigationBar: RetailerBottomNav(currentIndex: 0, onTap: _onNavTap),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add_shopping_cart),
         label: const Text('New Order'),
-        onPressed: () => Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const RetailerCatalogScreen())),
+        onPressed: _openCatalog,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : _error != null
+              ? LoadError(message: _error!, onRetry: _load)
+              : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -164,15 +183,32 @@ class _RetailerDashboardScreenState extends State<RetailerDashboardScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Card(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: Text('No recent transactions.',
-                            style: TextStyle(color: AppColors.textMuted)),
+                  if ((stats?.recentTransactions ?? []).isEmpty)
+                    const Card(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text('No recent transactions.',
+                              style: TextStyle(color: AppColors.textMuted)),
+                        ),
                       ),
-                    ),
-                  ),
+                    )
+                  else
+                    ...stats!.recentTransactions.map((t) {
+                      final color =
+                          t.isCredit ? AppColors.success : AppColors.danger;
+                      return Card(
+                        child: ListTile(
+                          title: Text(
+                            '${t.isCredit ? '+' : '-'}${formatCurrency(t.amount)}',
+                            style: TextStyle(
+                                color: color, fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                              '${t.paymentTypeDesc ?? 'Payment'}  ·  ${t.createdOn.day}/${t.createdOn.month}/${t.createdOn.year}'),
+                        ),
+                      );
+                    }),
                 ],
               ),
             ),

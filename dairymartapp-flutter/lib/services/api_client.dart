@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
+import '../utils/json_unwrap.dart';
 import 'api_config.dart';
 import 'session_manager.dart';
 
@@ -29,7 +30,11 @@ class ApiClient {
           .replace(queryParameters: query);
 
   Map<String, String> _headers() {
-    final headers = {'Content-Type': 'application/json'};
+    final headers = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store',
+      'Pragma': 'no-cache',
+    };
     final auth = SessionManager.instance.current?.basicAuthHeader;
     if (auth != null) headers['Authorization'] = auth;
     return headers;
@@ -96,7 +101,13 @@ class ApiClient {
   dynamic _decode(http.Response res) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return null;
-      return jsonDecode(res.body);
+      final trimmed = res.body.trim();
+      if (trimmed.isEmpty) return null;
+      try {
+        return unwrapJson(jsonDecode(trimmed));
+      } catch (_) {
+        return int.tryParse(trimmed) ?? trimmed;
+      }
     }
     String message = 'Request failed (${res.statusCode})';
     try {

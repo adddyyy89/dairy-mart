@@ -77,8 +77,11 @@ public class CrateService {
 
     public Integer getCurrentAssignedCrateForUser(int userId) {
         CrateDao dao = crateRepository.getCurrentAssignedCrateForUser(userId);
-        int currentCrates = dao.getCrateCount() - dao.getCrateReturned() + dao.getCrateReceived();
-        return currentCrates;
+        if (dao != null) {
+            return dao.getCrateCount() - dao.getCrateReturned() + dao.getCrateReceived();
+        }
+        UserDao user = userService.findById(userId);
+        return user != null ? user.getCrateCount() : 0;
     }
 
 }

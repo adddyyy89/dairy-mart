@@ -1,226 +1,219 @@
+function currentUser() {
+  try { return JSON.parse(sessionStorage.getItem('user') || '{}'); } catch (_) { return {}; }
+}
+
+function isActiveFlag(obj) {
+  if (!obj) return true;
+  if (obj.isActive === false || obj.active === false) return false;
+  return true;
+}
+
+function salesmanName(user) {
+  if (!user) return 'Unknown salesman';
+  return `${user.firstName || ''} ${user.lastName || ''}`.trim() || (`User #${user.userId}`);
+}
+
+function shopLabel(shop) {
+  if (!shop) return 'Unknown shop';
+  const owner = shop.owner ? ` (${shop.owner.firstName || ''} ${shop.owner.lastName || ''})`.trim() : '';
+  return `${shop.shopName || ('Shop #' + shop.shopId)}${owner}`;
+}
+
+function showAlert(kind, message) {
+  const el = document.getElementById('alertMessage');
+  el.className = `alert alert-${kind} mt-3`;
+  el.textContent = message;
+  el.style.display = 'block';
+}
+
+function formatDate(value) {
+  if (!value) return '—';
+  if (typeof value === 'string') return value.slice(0, 10);
+  if (value.year) return `${value.year}-${String(value.month).padStart(2, '0')}-${String(value.day).padStart(2, '0')}`;
+  return String(value);
+}
+
 let shops = [];
-let salesmans = [];
+let salesmen = [];
 let assignments = [];
+let branches = [];
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const sessionString = sessionStorage.getItem('user');
-    if (!sessionString) return;
+async function loadShops() {
+  try {
+    const data = await apiGet('/shop/get/all');
+    const list = asList(data);
+    if (list.length) return list;
+  } catch (error) {
+    console.warn('shop/get/all failed', error);
+  }
 
-    const userData = JSON.parse(sessionString);
-    const encodedCredentials = btoa(`${userData.phoneNumber}:${userData.password}`);
-
-    // Use Promise.all to fetch both lists in parallel and WAIT for them
-    try {
-        const [shopData, salesmanData, assignmentData] = await Promise.all([
-            getAllShops(encodedCredentials),
-            getUsersByType(2, encodedCredentials),
-            getCurrentAssignments(encodedCredentials)
-        ]);
-
-        shops = shopData;
-        salesmans = salesmanData;
-        assignments = assignmentData;
-
-        // Only populate the page AFTER data is received
-        populatePageFromSession();
-    } catch (error) {
-        console.error("Initialization failed:", error);
+  const shopsById = new Map();
+  try {
+    const retailers = asList(await apiGet('/user/get/usertype/3'));
+    for (const retailer of retailers) {
+      const userId = retailer.userId;
+      if (!userId) continue;
+      try {
+        const theirs = asList(await apiGet('/shop/get/user/' + userId));
+        theirs.forEach((shop) => {
+          if (shop && shop.shopId != null) shopsById.set(Number(shop.shopId), shop);
+        });
+      } catch (_) {}
     }
+  } catch (_) {}
+  return Array.from(shopsById.values());
+}
+
+async function loadMappingPage() {
+  const tableBody = document.getElementById('mappingTableBody');
+  tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>';
+
+  try {
+    assignments = asList(await apiGet('/salesmantoretail/get/all'));
+  } catch (error) {
+    assignments = [];
+    console.warn(error);
+  }
+
+  shops = await loadShops();
+
+  try {
+    salesmen = asList(await apiGet('/user/get/usertype/2'));
+  } catch (_) {
+    try {
+      salesmen = asList(await apiGet('/user/get/all')).filter((u) => Number(u.userTypeId || u.type?.userTypeId) === 2);
+    } catch (_) {
+      salesmen = [];
+    }
+  }
+
+  try {
+    branches = asList(await apiGet('/branch/get/all'));
+  } catch (_) {
+    branches = [];
+  }
+
+  if (!shops.length) {
+    showAlert('warning', 'No retailer shops found. Add a retailer with a shop name first.');
+  }
+
+  fillDropdowns();
+  renderTable();
+}
+
+function fillDropdowns() {
+  const salesmanSelect = document.getElementById('salesmanSelect');
+  const retailerSelect = document.getElementById('retailerSelect');
+  const branchSelect = document.getElementById('branchSelect');
+
+  salesmanSelect.innerHTML = '<option value="" selected disabled>Choose a salesman...</option>';
+  salesmen.filter(isActiveFlag).forEach((user) => {
+    salesmanSelect.add(new Option(salesmanName(user), user.userId));
+  });
+
+  const assignedShopIds = new Set(
+    assignments.filter(isActiveFlag).map((row) => Number(row.retailerId || row.retailer?.shopId))
+  );
+
+  retailerSelect.innerHTML = '<option value="" selected disabled>Choose a retailer shop...</option>';
+  shops.forEach((shop) => {
+    const already = assignedShopIds.has(Number(shop.shopId));
+    const inactive = shop.isActive === false || shop.active === false;
+    const label = shopLabel(shop)
+      + (already ? ' (already assigned)' : '')
+      + (inactive ? ' (inactive)' : '');
+    retailerSelect.add(new Option(label, shop.shopId));
+  });
+
+  branchSelect.innerHTML = '';
+  if (branches.length) {
+    branches.forEach((branch) => {
+      branchSelect.add(new Option(branch.branchName || `Branch ${branch.branchId}`, branch.branchId));
+    });
+  } else {
+    branchSelect.add(new Option('Default branch (7)', 7));
+  }
+  branchSelect.value = branches.some((b) => Number(b.branchId) === 7) ? '7' : (branchSelect.options[0]?.value || '7');
+}
+
+function renderTable() {
+  const tableBody = document.getElementById('mappingTableBody');
+  if (!assignments.length) {
+    tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No salesman–retailer assignments yet.</td></tr>';
+    return;
+  }
+
+  tableBody.innerHTML = assignments.map((item) => {
+    const salesman = item.salesman || {};
+    const shop = item.retailer || {};
+    const active = isActiveFlag(item);
+    const sid = item.salesmanId;
+    const rid = item.retailerId;
+    return `
+      <tr class="${active ? '' : 'table-secondary'}">
+        <td>
+          <div class="fw-bold">${salesmanName(salesman)}</div>
+          <small class="text-muted">${salesman.phoneNumber || ''}</small>
+        </td>
+        <td>
+          <div class="fw-bold">${shop.shopName || ('Shop #' + rid)}</div>
+          <small class="text-muted">${shop.address?.fullAddress || ''}</small>
+        </td>
+        <td>${item.vehicleNumber || '—'}</td>
+        <td>${formatDate(item.createdOn)}</td>
+        <td>
+          <span class="badge ${active ? 'bg-success' : 'bg-secondary'}">${active ? 'Active' : 'Inactive'}</span>
+        </td>
+        <td class="text-center">
+          ${active ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteMapping(${sid}, ${rid})"><i class="bi bi-trash"></i></button>` : ''}
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadMappingPage();
+
+  document.getElementById('mappingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const salesmanId = parseInt(document.getElementById('salesmanSelect').value, 10);
+    const retailerId = parseInt(document.getElementById('retailerSelect').value, 10);
+    const branchId = parseInt(document.getElementById('branchSelect').value, 10) || 7;
+    const vehicleNumber = document.getElementById('vehicleNumber').value.trim();
+    const user = currentUser();
+
+    if (!salesmanId || !retailerId) {
+      showAlert('warning', 'Select both a salesman and a retailer shop.');
+      return;
+    }
+
+    try {
+      await apiPost('/salesmantoretail/assign', {
+        salesmanId,
+        retailerId,
+        vehicleNumber,
+        createdBy: user.userId || 1,
+        isActive: true,
+        branchId,
+      });
+      showAlert('success', 'Retailer assigned to salesman.');
+      document.getElementById('mappingForm').reset();
+      await loadMappingPage();
+    } catch (error) {
+      showAlert('danger', error.message);
+    }
+  });
 });
 
-// Added 'async' and 'await' here
-async function getUsersByType(userType, encodedCredentials) {
-    try {
-        const response = await fetch('http://localhost:8080/user/get/usertype/' + userType, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${encodedCredentials}`
-            }
-        });
-
-        if (response.status === 401) throw new Error('Unauthorized');
-        if (!response.ok) throw new Error('Network response was not ok');
-
-        return await response.json(); // This actually returns the data to the caller
-    } catch (error) {
-        console.error(`Error fetching user type ${userType}:`, error);
-        return []; // Return empty array on error to prevent .forEach crashes
-    }
+async function deleteMapping(salesmanId, retailerId) {
+  if (!confirm('Remove this salesman–retailer assignment?')) return;
+  try {
+    await apiPost('/salesmantoretail/delete', { salesmanId, retailerId });
+    showAlert('success', 'Assignment removed.');
+    await loadMappingPage();
+  } catch (error) {
+    showAlert('danger', error.message);
+  }
 }
 
-// Added 'async' and 'await' here
-async function getAllShops(encodedCredentials) {
-    try {
-        const response = await fetch('http://localhost:8080/shop/get/all', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${encodedCredentials}`
-            }
-        });
-
-        if (response.status === 401) throw new Error('Unauthorized');
-        if (!response.ok) throw new Error('Network response was not ok');
-
-        return await response.json(); // This actually returns the data to the caller
-    } catch (error) {
-        console.error(`Error fetching user type ${userType}:`, error);
-        return []; // Return empty array on error to prevent .forEach crashes
-    }
-}
-
-// Added 'async' and 'await' here
-async function getUsersByType(userType, encodedCredentials) {
-    try {
-        const response = await fetch('http://localhost:8080/user/get/usertype/' + userType, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${encodedCredentials}`
-            }
-        });
-
-        if (response.status === 401) throw new Error('Unauthorized');
-        if (!response.ok) throw new Error('Network response was not ok');
-
-        return await response.json(); // This actually returns the data to the caller
-    } catch (error) {
-        console.error(`Error fetching user type ${userType}:`, error);
-        return []; // Return empty array on error to prevent .forEach crashes
-    }
-}
-
-// Added 'async' and 'await' here
-async function getCurrentAssignments(encodedCredentials) {
-    try {
-        const response = await fetch('http://localhost:8080/salesmantoretail/get/all', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${encodedCredentials}`
-            }
-        });
-
-        if (response.status === 401) throw new Error('Unauthorized');
-        if (!response.ok) throw new Error('Network response was not ok');
-
-        return await response.json(); // This actually returns the data to the caller
-    } catch (error) {
-        console.error(`Error fetching user type ${userType}:`, error);
-        return []; // Return empty array on error to prevent .forEach crashes
-    }
-}
-
-function populatePageFromSession() {
-    
-
-    try {
-        const salesmanDropdown = document.getElementById('salesmanSelect');
-        const retailerDropdown = document.getElementById('retailerSelect');
-        const tableBody = document.getElementById('mappingTableBody');
-
-        tableBody.innerHTML = '';
-        salesmanDropdown.innerHTML = '<option value="" selected disabled>Choose a salesman...</option>';
-        retailerDropdown.innerHTML = '<option value="" selected disabled>Choose a retailer...</option>';
-
-        // 1. Populate Table
-        assignments.forEach(item => {
-
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>
-                    <div class="fw-bold">${item.salesman.firstName} ${item.salesman.lastName}</div>
-                    <small class="text-muted">${item.salesman.phoneNumber}</small>
-                </td>
-                <td>
-                    <div class="fw-bold">${item.retailer.shopName}</div>
-                    <small class="text-muted">${item.retailer.address.fullAddress}</small>
-                </td>
-                <td>
-                    <span class="badge ${item.retailer.isActive ? 'bg-success' : 'bg-secondary'}">
-                        ${item.retailer.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-primary" onclick="editMapping('${item.salesmanId}', '${item.retailerId}')"><i class="bi bi-pencil-square"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMapping('${item.salesmanId}', '${item.retailerId}')"><i class="bi bi-trash"></i></button>
-                </td>`;
-            tableBody.appendChild(row);
-        });
-
-        // 2. Populate Dropdowns (Now retailers and salesmans will have data)
-        shops.forEach(item => {
-            if (item.isActive) {
-                const opt = new Option(`${item.shopName}`.trim(), item.shopId);
-                retailerDropdown.add(opt);
-            }
-
-        });
-
-        salesmans.forEach(item => {
-            if (item.isActive) {
-                const opt = new Option(`${item.firstName} ${item.lastName}`.trim(), item.userId);
-                salesmanDropdown.add(opt);
-            }
-
-        });
-
-    } catch (error) {
-        console.error("Error populating page:", error);
-    }
-}
-
-document.getElementById('mappingForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); // Prevent page refresh
-
-    const salesmanId = document.getElementById('salesmanSelect').value;
-    const retailerId = document.getElementById('retailerSelect').value;
-    
-    if (!salesmanId || !retailerId ) {
-        alert("Please ensure Salesman, Retailer are provided.");
-        return;
-    }
-
-    const requestBody = {
-        "salesmanId": parseInt(salesmanId),
-        "retailerId": parseInt(retailerId),
-        "vehicleNumber": '',
-        "createdBy": 0,
-        "active": true,
-        "branchId": 0
-    };
-
-    await assignMapping(requestBody);
-});
-
-async function assignMapping(data) {
-    const sessionString = sessionStorage.getItem('user');
-    const userData = JSON.parse(sessionString);
-    const encodedCredentials = btoa(`${userData.phoneNumber}:${userData.password}`);
-
-    try {
-        const response = await fetch('http://localhost:8080/salesmantoretail/assign', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${encodedCredentials}`
-            },
-            body: JSON.stringify(data)
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            alert("Mapping assigned successfully!");
-            
-            // Optionally refresh the page or update the table/session storage here
-            location.reload(); 
-        } else {
-            const errorData = await response.text();
-            alert("Failed to assign mapping: " + errorData);
-        }
-    } catch (error) {
-        console.error('Error during assignment:', error);
-        alert("An error occurred while connecting to the server.");
-    }
-}
+window.deleteMapping = deleteMapping;

@@ -36,9 +36,11 @@ public class LoginService implements UserDetailsService {
         List<UserDao> users = userRepo.findAll();
         for(UserDao user : users) {
             System.out.println("Auth user:" + user.getPhoneNumber());
-            if(user.getPhoneNumber().equalsIgnoreCase(phoneNumber) && user.getPassword().equals(password)) {
-                System.out.println("Found!!!");
-                return user;
+            if(user.getPhoneNumber().equalsIgnoreCase(phoneNumber)) {
+                String stored = user.getPassword() == null ? "" : user.getPassword().replace("{noop}", "");
+                if (stored.equals(password) || user.getPassword().equals(password)) {
+                    return user;
+                }
             }
         }
         return null;
@@ -50,8 +52,11 @@ public class LoginService implements UserDetailsService {
         for(UserDao user : users) {
             //System.out.println("user:" + user.getPhoneNumber());
             if(user.getPhoneNumber().equalsIgnoreCase(username)) {
-                //System.out.println("Found!!!");
-                return new org.springframework.security.core.userdetails.User(user.getPhoneNumber(),user.getPassword(), getAuthorities(user));
+                String password = user.getPassword();
+                if (password != null && !password.startsWith("{")) {
+                    password = "{noop}" + password;
+                }
+                return new org.springframework.security.core.userdetails.User(user.getPhoneNumber(), password, getAuthorities(user));
             }
         }
         throw new UsernameNotFoundException("User not found with username: " + username);

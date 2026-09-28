@@ -1,4 +1,5 @@
 import '../models/order.dart';
+import '../utils/json_unwrap.dart';
 import 'api_client.dart';
 import 'api_config.dart';
 
@@ -9,24 +10,18 @@ class OrderService {
   Future<List<RetailOrder>> getOrdersForSalesman(int salesmanId) async {
     final json =
         await ApiClient.instance.get(ApiConfig.orderGetBySalesman(salesmanId));
-    return (json as List<dynamic>)
-        .map((e) => RetailOrder.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return asList(json).map((e) => RetailOrder.fromJson(asMap(e))).toList();
   }
 
   Future<List<RetailOrder>> getOrdersForRetailer(int retailerId) async {
     final json =
         await ApiClient.instance.get(ApiConfig.orderGetByRetailer(retailerId));
-    return (json as List<dynamic>)
-        .map((e) => RetailOrder.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return asList(json).map((e) => RetailOrder.fromJson(asMap(e))).toList();
   }
 
   Future<List<RetailOrder>> getAllOrders() async {
     final json = await ApiClient.instance.get(ApiConfig.orderGetAll);
-    return (json as List<dynamic>)
-        .map((e) => RetailOrder.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return asList(json).map((e) => RetailOrder.fromJson(asMap(e))).toList();
   }
 
   Future<void> createOrder({
@@ -41,7 +36,7 @@ class OrderService {
         'retailerId': retailerId,
         'branchId': branchId,
         'createdBy': createdBy,
-        'orderDate': DateTime.now().toIso8601String().split('T').first,
+        'orderStatusId': 1,
         'orderDetails': items.map((e) => e.toJson()).toList(),
       },
     );

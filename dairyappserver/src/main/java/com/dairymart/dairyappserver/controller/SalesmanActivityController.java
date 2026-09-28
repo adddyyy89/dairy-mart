@@ -1,12 +1,11 @@
 package com.dairymart.dairyappserver.controller;
 
 import com.dairymart.dairyappserver.dao.LedgerTransactionsDao;
-import com.dairymart.dairyappserver.dao.SalesmanOrdersDao;
 import com.dairymart.dairyappserver.dao.UserWalletDao;
 import com.dairymart.dairyappserver.dto.LedgerTransactionsDTO;
 import com.dairymart.dairyappserver.service.CrateService;
 import com.dairymart.dairyappserver.service.LedgerService;
-import com.dairymart.dairyappserver.service.SalesmanToRetailService;
+import com.dairymart.dairyappserver.service.RetailOrderService;
 import com.dairymart.dairyappserver.service.UserWalletService;
 import com.google.gson.Gson;
 import org.json.JSONObject;
@@ -35,7 +34,7 @@ public class SalesmanActivityController {
     private UserWalletService userWalletService;
 
     @Autowired
-    private SalesmanToRetailService salesmanToRetailService;
+    private RetailOrderService retailOrderService;
 
     @Autowired
     private CrateService crateService;
@@ -53,7 +52,7 @@ public class SalesmanActivityController {
         UserWalletDao walletDao = userWalletService.getWalletDetails(salesmanId);
 
 
-        List<SalesmanOrdersDao> salesmanOrdersDaos = salesmanToRetailService.getCurrentOrdersPlaced(salesmanId);
+        int ordersPlaced = retailOrderService.getOrdersForSalesman(salesmanId).size();
 
         int cratesAssigned = crateService.getCurrentAssignedCrateForUser(salesmanId);
 
@@ -65,7 +64,7 @@ public class SalesmanActivityController {
 
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("walletbalance", walletDao != null ? walletDao.getBalance() : "??");
-        jsonObject.put("ordersplaced", salesmanOrdersDaos.size());
+        jsonObject.put("ordersplaced", ordersPlaced);
         jsonObject.put("cratesassigned", cratesAssigned);
         jsonObject.put("recenttransactions", ledgerTransactionsDTOS);
 

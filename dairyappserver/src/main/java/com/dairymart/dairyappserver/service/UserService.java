@@ -29,6 +29,7 @@ public class UserService {
     }
 
     public UserDao createUser(UserDao user) {
+        user.setPassword(storedPassword(user.getPassword()));
         UserAddressDao addressDao = userAddressService.addNewAddress(user.getAddress());
         if(addressDao != null) {
             user.setAddressId(addressDao.getAddressId());
@@ -64,19 +65,47 @@ public class UserService {
     }
 
     public UserDao updateById(UserDTO dto) {
-
-        int userId = dto.getUserId();
-        UserDao d = findById(userId);
-        if(d == null) {
+        UserDao d = findById(dto.getUserId());
+        if (d == null) {
             return null;
         }
 
-        UserDao dao = new UserDao(dto);
-        dao.setLastUpdated(new Date(System.currentTimeMillis()));
-        dao.setUserId(dto.getUserId());
-        return userRepository.save(dao);
+        if (dto.getFirstName() != null && !dto.getFirstName().isEmpty()) {
+            d.setFirstName(dto.getFirstName());
+        }
+        if (dto.getLastName() != null) {
+            d.setLastName(dto.getLastName());
+        }
+        if (dto.getEmailId() != null && !dto.getEmailId().isEmpty()) {
+            d.setEmailId(dto.getEmailId());
+        }
+        if (dto.getPhoneNumber() != null && !dto.getPhoneNumber().isEmpty()) {
+            d.setPhoneNumber(dto.getPhoneNumber());
+        }
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            d.setPassword(storedPassword(dto.getPassword()));
+        }
+        if (dto.getUserTypeId() > 0) {
+            d.setTypeId(dto.getUserTypeId());
+        }
+        if (dto.getAddressId() > 0) {
+            d.setAddressId(dto.getAddressId());
+        }
+        if (dto.getActive() != null) {
+            d.setActive(dto.getActive());
+        }
+        d.setLastUpdated(new Date(System.currentTimeMillis()));
+        return userRepository.save(d);
+    }
 
-
+    public static String storedPassword(String password) {
+        if (password == null || password.isEmpty()) {
+            return password;
+        }
+        if (password.startsWith("{")) {
+            return password;
+        }
+        return "{noop}" + password;
     }
 
     public UserDao saveUser(UserDao dao) {

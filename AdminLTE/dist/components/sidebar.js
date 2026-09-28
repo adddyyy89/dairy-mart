@@ -28,26 +28,50 @@ function loadSidebar(basePath = './') {
             </li>
             <li class="nav-item">
               <a href="${basePath}pages/users.html" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
+                <i class="nav-icon bi bi-people"></i>
                 <p>Users</p>
               </a>
             </li>
             <li class="nav-item">
+              <a href="${basePath}pages/salesmen.html" class="nav-link">
+                <i class="nav-icon bi bi-person-badge"></i>
+                <p>Salesmen</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="${basePath}pages/retailers.html" class="nav-link">
+                <i class="nav-icon bi bi-shop"></i>
+                <p>Retailers</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="${basePath}pages/salesman-retailer-map.html" class="nav-link">
+                <i class="nav-icon bi bi-diagram-3"></i>
+                <p>Assign Retailers</p>
+              </a>
+            </li>
+            <li class="nav-item">
               <a href="${basePath}pages/orders.html" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
+                <i class="nav-icon bi bi-receipt"></i>
                 <p>Orders</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="${basePath}pages/ledgers.html" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
+                <i class="nav-icon bi bi-wallet2"></i>
                 <p>Ledgers</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="${basePath}pages/products.html" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
+                <i class="nav-icon bi bi-box-seam"></i>
                 <p>Products</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="${basePath}pages/addproduct.html" class="nav-link">
+                <i class="nav-icon bi bi-plus-square"></i>
+                <p>Add Product</p>
               </a>
             </li>
           </ul>

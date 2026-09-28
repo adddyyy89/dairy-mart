@@ -1,13 +1,18 @@
 package com.dairymart.dairyappserver.service;
 
+import com.dairymart.dairyappserver.dao.GSTDao;
 import com.dairymart.dairyappserver.dao.ProductDao;
 import com.dairymart.dairyappserver.dao.ShopDao;
+import com.dairymart.dairyappserver.dao.UserDao;
 import com.dairymart.dairyappserver.dto.ProductDTO;
 import com.dairymart.dairyappserver.dto.ShopDTO;
+import com.dairymart.dairyappserver.repository.GSTRepository;
 import com.dairymart.dairyappserver.repository.ProductRepository;
 import com.dairymart.dairyappserver.repository.ShopRepository;
+import com.dairymart.dairyappserver.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Date;
 import java.util.*;
@@ -19,12 +24,61 @@ public class ShopService {
     @Autowired
     private ShopRepository shopRepository;
 
+    @Autowired
+    private GSTRepository gstRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
     public List<ShopDao> getAllShops() {
         return shopRepository.findAll();
     }
 
+    @Transactional
     public ShopDao createShop(ShopDao shopDao) {
+        Date now = new Date(System.currentTimeMillis());
+        if (shopDao.getCreatedOn() == null) {
+            shopDao.setCreatedOn(now);
+        }
+        shopDao.setLastUpdated(now);
+
+        if (shopDao.getAddressId() <= 0 && shopDao.getUserId() > 0) {
+            UserDao owner = userRepository.findById(shopDao.getUserId()).orElse(null);
+            if (owner != null) {
+                shopDao.setAddressId(owner.getAddressId());
+            }
+        }
+
+        if (shopDao.getGstId() <= 0) {
+            GSTDao gst = new GSTDao();
+            if (shopDao.getGst() != null) {
+                gst.setGstNumber(blankToNa(shopDao.getGst().getGstNumber()));
+                gst.setAadharNumber(blankToNa(shopDao.getGst().getAadharNumber()));
+                gst.setPanNumber(blankToNa(shopDao.getGst().getPanNumber()));
+            } else {
+                gst.setGstNumber("NA");
+                gst.setAadharNumber("NA");
+                gst.setPanNumber("NA");
+            }
+            gst = persistGst(gst);
+            shopDao.setGstId(gst.getGstId());
+            shopDao.setGst(null);
+        }
+        shopDao.setActive(true);
+
         return shopRepository.save(shopDao);
+    }
+
+    private GSTDao persistGst(GSTDao gst) {
+        if (gst.getGstId() <= 0) {
+            Integer maxId = gstRepository.findMaxGstId();
+            gst.setGstId((maxId == null ? 0 : maxId) + 1);
+        }
+        return gstRepository.save(gst);
+    }
+
+    private static String blankToNa(String value) {
+        return value == null || value.isBlank() ? "NA" : value.trim();
     }
 
     public ShopDao findById(int id) {
@@ -37,20 +91,37 @@ public class ShopService {
         return shopRepository.findAll().stream().filter(x -> x.getShopName().contains(productQuery)).collect(Collectors.toCollection(ArrayList::new));
     }
 
+    @Transactional
     public ShopDao updateById(ShopDTO dto) {
-
-        int pId = dto.getShopId();
-        ShopDao d = findById(pId);
-        if(d == null) {
+        ShopDao existing = findById(dto.getShopId());
+        if (existing == null) {
             return null;
         }
 
-        ShopDao dao = new ShopDao(dto);
-        dao.setLastUpdated(new Date(System.currentTimeMillis()));
-        dao.setShopId(dto.getShopId());
-        return shopRepository.save(dao);
+        if (dto.getShopName() != null && !dto.getShopName().isEmpty()) {
+            existing.setShopName(dto.getShopName());
+        }
+        if (dto.getAddressId() > 0) {
+            existing.setAddressId(dto.getAddressId());
+        }
+        existing.setLastUpdated(new Date(System.currentTimeMillis()));
 
-
+        if (dto.getGst() != null || dto.getGstId() > 0) {
+            int gstId = existing.getGstId() > 0 ? existing.getGstId() : dto.getGstId();
+            GSTDao gst = gstId > 0 ? gstRepository.findById(gstId).orElse(null) : null;
+            if (gst == null) {
+                gst = new GSTDao();
+            }
+            if (dto.getGst() != null) {
+                gst.setGstNumber(blankToNa(dto.getGst().getGstNumber()));
+                gst.setPanNumber(blankToNa(dto.getGst().getPanNumber()));
+                gst.setAadharNumber(blankToNa(dto.getGst().getAadharNumber()));
+            }
+            gst = persistGst(gst);
+            existing.setGstId(gst.getGstId());
+        }
+        existing.setGst(null);
+        return shopRepository.save(existing);
     }
 
     public List<ShopDao> getShopByRetailerId(int retailerId) {

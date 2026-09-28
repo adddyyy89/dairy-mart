@@ -1,4 +1,5 @@
 import '../models/crate.dart';
+import '../utils/json_unwrap.dart';
 import 'api_client.dart';
 import 'api_config.dart';
 
@@ -8,27 +9,22 @@ class CrateService {
 
   Future<List<CrateRecord>> getAllCrates() async {
     final json = await ApiClient.instance.get(ApiConfig.crateGetAll);
-    return (json as List<dynamic>)
-        .map((e) => CrateRecord.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return asList(json).map((e) => CrateRecord.fromJson(asMap(e))).toList();
   }
 
   Future<CrateRecord?> getCratesForUser(int userId) async {
     final json = await ApiClient.instance.get(ApiConfig.crateGetByUser(userId));
-    if (json == null) return null;
-    if (json is List && json.isNotEmpty) {
-      return CrateRecord.fromJson(json.first as Map<String, dynamic>);
-    }
-    if (json is Map<String, dynamic>) return CrateRecord.fromJson(json);
+    final list = asList(json);
+    if (list.isNotEmpty) return CrateRecord.fromJson(asMap(list.first));
+    if (json is Map) return CrateRecord.fromJson(asMap(json));
     return null;
   }
 
-  Future<List<CrateRecord>> getAssignedToUser(int userId) async {
+  /// GET /crate/assigned/user/{id} returns a bare integer, not a crate list.
+  Future<int> getAssignedCount(int userId) async {
     final json =
         await ApiClient.instance.get(ApiConfig.crateAssignedToUser(userId));
-    return (json as List<dynamic>)
-        .map((e) => CrateRecord.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return asInt(json);
   }
 
   Future<void> updateCrateRecord(CrateRecord record) async {

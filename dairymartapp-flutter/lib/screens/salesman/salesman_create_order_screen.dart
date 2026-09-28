@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../models/assignment.dart';
 import '../../models/order.dart';
 import '../../models/product.dart';
+import '../../services/assignment_service.dart';
 import '../../services/order_service.dart';
 import '../../services/product_service.dart';
 import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/load_error.dart';
 
-/// Port of activity_salesman_create_order.xml + list_salesman_create_order_items.xml:
-/// pick a retailer, add products with quantities from the catalog, review the
-/// running total, and submit via POST /retailorder/add.
 class SalesmanCreateOrderScreen extends StatefulWidget {
   const SalesmanCreateOrderScreen({super.key});
 
@@ -18,35 +18,66 @@ class SalesmanCreateOrderScreen extends StatefulWidget {
       _SalesmanCreateOrderScreenState();
 }
 
-class _SalesmanCreateOrderScreenState
-    extends State<SalesmanCreateOrderScreen> {
-  bool _isLoadingProducts = true;
+class _SalesmanCreateOrderScreenState extends State<SalesmanCreateOrderScreen>
+    with WidgetsBindingObserver {
+  bool _isLoading = true;
   bool _isSubmitting = false;
+  String? _error;
   List<Product> _products = [];
-  final Map<int, int> _quantities = {}; // productId -> qty
+  List<SalesmanAssignment> _assignments = [];
+  SalesmanAssignment? _selected;
+  final Map<int, int> _quantities = {};
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    WidgetsBinding.instance.addObserver(this);
+    _load();
   }
 
-  Future<void> _loadProducts() async {
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    final session = SessionManager.instance.current;
+    if (session == null) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final products = await ProductService.instance.getAllProducts();
-      if (mounted) setState(() => _products = products);
+      final products =
+          await ProductService.instance.getAllProducts(forceRefresh: true);
+      final assignments =
+          await AssignmentService.instance.getForSalesman(session.userId);
+      if (mounted) {
+        setState(() {
+          _products = products;
+          _assignments = assignments;
+          _selected ??= assignments.isNotEmpty ? assignments.first : null;
+        });
+      }
     } catch (_) {
-      // real app: show retry state
+      if (mounted) setState(() => _error = 'Could not load catalog.');
     } finally {
-      if (mounted) setState(() => _isLoadingProducts = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   double get _total {
     double sum = 0;
     for (final p in _products) {
-      final qty = _quantities[p.productId] ?? 0;
-      sum += qty * p.saleRate;
+      sum += (_quantities[p.productId] ?? 0) * p.saleRate;
     }
     return sum;
   }
@@ -56,19 +87,25 @@ class _SalesmanCreateOrderScreenState
   void _updateQuantity(Product product, int delta) {
     setState(() {
       final current = _quantities[product.productId] ?? 0;
-      final next = (current + delta).clamp(0, 999);
-      _quantities[product.productId] = next;
+      _quantities[product.productId] = (current + delta).clamp(0, 999);
     });
   }
 
   Future<void> _submitOrder() async {
     final session = SessionManager.instance.current;
-    if (session == null) return;
+    final retailer = _selected;
+    if (session == null || retailer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Select a retailer first.')));
+      return;
+    }
 
     final items = _products
         .where((p) => (_quantities[p.productId] ?? 0) > 0)
         .map((p) => OrderLineItem(
-              productCode: p.productCode,
+              productCode: p.productCode.isNotEmpty
+                  ? p.productCode
+                  : p.productId.toString(),
               quantity: (_quantities[p.productId] ?? 0).toString(),
               unit: p.unit,
               saleRate: p.saleRate,
@@ -78,34 +115,28 @@ class _SalesmanCreateOrderScreenState
         .toList();
 
     if (items.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Add at least one product.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Add at least one product.')));
       return;
     }
-
-    // TODO: replace with a real retailer picker (fetch via
-    // /salesmantoretail/get/assignment/salesman/{id}) - hardwired here so the
-    // submit flow is complete end-to-end.
-    const retailerId = 0;
-    const branchId = 0;
 
     setState(() => _isSubmitting = true);
     try {
       await OrderService.instance.createOrder(
-        retailerId: retailerId,
-        branchId: branchId,
+        retailerId: retailer.shopId,
+        branchId: retailer.branchId,
         createdBy: session.userId,
         items: items,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Order placed successfully.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Order placed successfully.')));
         Navigator.pop(context);
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Could not place order.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not place order.')));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -115,19 +146,70 @@ class _SalesmanCreateOrderScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Order')),
-      body: _isLoadingProducts
+      appBar: AppBar(
+        title: const Text('Create Order'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh products',
+            onPressed: _isLoading ? null : _load,
+          ),
+        ],
+      ),
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-              itemCount: _products.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) => _ProductLineTile(
-                product: _products[i],
-                quantity: _quantities[_products[i].productId] ?? 0,
-                onChanged: (delta) => _updateQuantity(_products[i], delta),
-              ),
-            ),
+          : _error != null
+              ? LoadError(message: _error!, onRetry: _load)
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Retailer',
+                          border: OutlineInputBorder(),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<int>(
+                            isExpanded: true,
+                            hint: const Text('Select retailer'),
+                            value: _selected?.shopId,
+                            items: _assignments
+                                .map((a) => DropdownMenuItem(
+                                      value: a.shopId,
+                                      child: Text(a.shopName),
+                                    ))
+                                .toList(),
+                            onChanged: (id) {
+                              SalesmanAssignment? next;
+                              for (final a in _assignments) {
+                                if (a.shopId == id) next = a;
+                              }
+                              setState(() => _selected = next);
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                          itemCount: _products.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (context, i) => _ProductLineTile(
+                            product: _products[i],
+                            quantity: _quantities[_products[i].productId] ?? 0,
+                            onChanged: (delta) =>
+                                _updateQuantity(_products[i], delta),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -139,6 +221,7 @@ class _SalesmanCreateOrderScreenState
             children: [
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('$_itemCount items',
@@ -155,7 +238,8 @@ class _SalesmanCreateOrderScreenState
                     ? const SizedBox(
                         height: 18,
                         width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
                     : const Text('Place Order'),
               ),
             ],
@@ -193,7 +277,8 @@ class _ProductLineTile extends StatelessWidget {
                 color: AppColors.surfaceMuted,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: const Icon(Icons.local_drink_outlined, color: AppColors.primary),
+              child: const Icon(Icons.local_drink_outlined,
+                  color: AppColors.primary),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -204,7 +289,8 @@ class _ProductLineTile extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   Text(
                     '${product.displayQuantity} • ${formatCurrency(product.saleRate)}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ],
               ),

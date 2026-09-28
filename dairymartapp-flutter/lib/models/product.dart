@@ -1,3 +1,5 @@
+import '../utils/json_unwrap.dart';
+
 /// Maps to ProductDTO (dairyappserver/dto/ProductDTO.java)
 /// Note: several numeric-looking fields (rates, quantity) are Strings on the
 /// backend DTO, so we parse defensively.
@@ -36,17 +38,17 @@ class Product {
     }
 
     return Product(
-      productId: json['productId'] ?? 0,
-      productName: json['productName'] ?? '',
-      productShortName: json['productShortName'],
+      productId: asInt(json['productId']),
+      productName: json['productName']?.toString() ?? '',
+      productShortName: json['productShortName']?.toString(),
       productCode: json['productCode']?.toString() ?? '',
       unit: json['unit']?.toString() ?? '',
       quantity: json['quantity']?.toString() ?? '',
-      saleRate: parseNum(json['productSaleRate']),
-      purchaseRate: parseNum(json['productPurchaseRate']),
+      saleRate: parseNum(json['productSaleRate'] ?? json['saleRate']),
+      purchaseRate: parseNum(json['productPurchaseRate'] ?? json['purchaseRate']),
       mrp: parseNum(json['mrp']),
-      pictureUrl: json['productPictureUrl'],
-      isActive: json['isActive'] ?? true,
+      pictureUrl: json['productPictureUrl']?.toString(),
+      isActive: json['active'] ?? json['isActive'] ?? true,
     );
   }
 

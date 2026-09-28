@@ -40,11 +40,21 @@ public class RetailOrderService {
     @Autowired
     private SalesmanToRetailService salesmanToRetailService;
 
+    @Autowired
+    private ShopService shopService;
+
     public List<RetailOrderDao> getAllOrders() {
         return retailOrderRepository.findAll();
     }
 
     public RetailOrderDao createOrder(RetailOrderDTO order) {
+
+        if (order.getOrderStatusId() <= 0) {
+            order.setOrderStatusId(1);
+        }
+        if (order.getBranchId() <= 0) {
+            order.setBranchId(7);
+        }
 
         RetailOrderDao orderDao = new RetailOrderDao(order);
         orderDao.setCreatedon(new Date(System.currentTimeMillis()));
@@ -57,12 +67,16 @@ public class RetailOrderService {
         logger.info("Retail order entry created with order Id: {}", savedOrderDao.getOrderId());
         logger.info("Proceeding with entries for order details..");
 
-        // Save order details one at a time
-        for(RetailOrderDetailsDTO dto : order.getOrderDetails()) {
-            dto.setLastUpdated(new Date(System.currentTimeMillis()));
-            dto.setOrderId(savedOrderDao.getOrderId());
-            retailOrderDetailsRepository.save(new RetailOrderDetailsDao(dto));
-            logger.info("Added new entry for order Id: {}, product code: {}", dto.getOrderId(), dto.getProductCode());
+        if (order.getOrderDetails() != null) {
+            for (RetailOrderDetailsDTO dto : order.getOrderDetails()) {
+                if (dto == null || dto.getProductCode() == null || dto.getProductCode().isBlank()) {
+                    continue;
+                }
+                dto.setLastUpdated(new Date(System.currentTimeMillis()));
+                dto.setOrderId(savedOrderDao.getOrderId());
+                retailOrderDetailsRepository.save(new RetailOrderDetailsDao(dto));
+                logger.info("Added new entry for order Id: {}, product code: {}", dto.getOrderId(), dto.getProductCode());
+            }
         }
 
         logger.info("Retail order details entry are completed successfully.");
@@ -134,15 +148,40 @@ public class RetailOrderService {
         return retailOrderDaos;
     }
 
+    /** Orders for shops assigned to this salesman ({@code salesmantoretail.retailerid} = shop id). */
+    public List<RetailOrderDao> getOrdersForSalesman(int salesmanUserId) {
+        List<Integer> shopIds = salesmanToRetailService.getAllRetailsforSalesman(salesmanUserId).stream()
+                .map(SalesmanToRetailDao::getRetailerId)
+                .collect(Collectors.toList());
+        return getOrdersForRetailers(shopIds);
+    }
+
     public UserDao getSalesmanUsingOrderId(int orderId) {
         List<RetailOrderDao> retailOrderDaos = retailOrderRepository.findAll().stream().filter(retailOrderDao -> retailOrderDao.getOrderId() == orderId).collect(Collectors.toCollection(ArrayList::new));
         int retailerId = retailOrderDaos.get(0).getRetailerId();
         return salesmanToRetailService.getSalesmanForRetailer(retailerId);
     }
 
+    /**
+     * Dashboard "orders placed" is keyed by user id, but {@code retail_order.retailer_id}
+     * is the shop id (same as create / GET /retailorder/get/retailer/{userId}).
+     */
     public List<RetailOrderDao> getCurrentOrdersPlaced(int retailerUserId) {
-        List<RetailOrderDao> retailerOrdersDaos = retailOrderRepository.findAll().stream().filter(x -> x.getRetailerId() == retailerUserId && DateUtil.isSameDay(new Timestamp(x.getCreatedon().getTime()))).collect(Collectors.toCollection(ArrayList::new));
-        return retailerOrdersDaos;
+        List<Integer> shopIds = shopService.getShopByRetailerId(retailerUserId).stream()
+                .map(ShopDao::getShopId)
+                .collect(Collectors.toList());
+        return retailOrderRepository.findAll().stream()
+                .filter(x -> {
+                    int rid = x.getRetailerId();
+                    if (rid != retailerUserId && !shopIds.contains(rid)) {
+                        return false;
+                    }
+                    if (x.getCreatedon() == null) {
+                        return true;
+                    }
+                    return DateUtil.isSameDay(new Timestamp(x.getCreatedon().getTime()));
+                })
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     /*public RetailOrderDetailsDao updateOrderDetails(RetailOrderDetailsDTO retailOrderDetailsDTO) {

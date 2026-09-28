@@ -4,6 +4,8 @@ import com.dairymart.dairyappserver.dao.GSTDao;
 import com.dairymart.dairyappserver.dao.ShopDao;
 import com.dairymart.dairyappserver.dao.UserAddressDao;
 import com.dairymart.dairyappserver.dao.UserDao;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import org.apache.catalina.User;
 
@@ -92,10 +94,13 @@ public class ShopDTO {
         this.gstId = gstId;
     }
 
+    @JsonProperty("isActive")
+    @JsonAlias("active")
     public boolean isActive() {
         return isActive;
     }
 
+    @JsonProperty("isActive")
     public void setActive(boolean active) {
         isActive = active;
     }

@@ -1,4 +1,5 @@
 import '../models/product.dart';
+import '../utils/json_unwrap.dart';
 import 'api_client.dart';
 import 'api_config.dart';
 
@@ -10,9 +11,15 @@ class ProductService {
 
   Future<List<Product>> getAllProducts({bool forceRefresh = false}) async {
     if (_cache != null && !forceRefresh) return _cache!;
-    final json = await ApiClient.instance.get(ApiConfig.productGetAll);
-    final products = (json as List<dynamic>)
-        .map((e) => Product.fromJson(e as Map<String, dynamic>))
+    dynamic json;
+    try {
+      json = await ApiClient.instance.get(ApiConfig.productGetAll);
+    } catch (_) {
+      json = await ApiClient.instance.get(ApiConfig.orderProducts);
+    }
+    final products = asList(json)
+        .map((e) => Product.fromJson(asMap(e)))
+        .where((p) => p.productName.isNotEmpty || p.productCode.isNotEmpty)
         .toList();
     _cache = products;
     return products;

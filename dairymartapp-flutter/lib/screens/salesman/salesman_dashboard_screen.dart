@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../models/crate.dart';
 import '../../models/salesman_dashboard.dart';
+import '../../services/assignment_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/crate_service.dart';
 import '../../services/dashboard_service.dart';
+import '../../services/location_ping.dart';
 import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/load_error.dart';
 import '../../widgets/stat_card.dart';
 import '../auth/login_screen.dart';
 import 'salesman_activity_orders_screen.dart';
@@ -15,6 +18,7 @@ import 'salesman_crates_screen.dart';
 import 'salesman_delivery_pending_screen.dart';
 import 'salesman_ledger_dashboard_screen.dart';
 import 'salesman_create_order_screen.dart';
+import 'tracking_screen.dart';
 
 /// Flutter port of res/layout/activity_salesman_dashboard_2.xml, updated to
 /// match the real GET /salesman/dashboard/get/{userId} response:
@@ -37,13 +41,16 @@ class SalesmanDashboardScreen extends StatefulWidget {
 class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
   bool _fabExpanded = false;
   bool _isLoading = true;
+  String? _error;
   SalesmanDashboardSummary? _summary;
   CrateRecord? _crateRecord;
+  String _vehicle = '';
 
   @override
   void initState() {
     super.initState();
     _loadDashboard();
+    LocationPing.instance.start();
     WidgetsBinding.instance.addPostFrameCallback((_) => _showStartupNoticeIfAny());
   }
 
@@ -68,30 +75,44 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
   Future<void> _loadDashboard() async {
     final session = SessionManager.instance.current;
     if (session == null) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final summary =
           await DashboardService.instance.getSalesmanDashboard(session.userId);
-      // The dashboard endpoint only returns `cratesassigned` - "engaged"
-      // (handed out but not yet returned) comes from the crate endpoint,
-      // same one the Crates screen uses.
       CrateRecord? crateRecord;
+      var vehicle = '';
       try {
         crateRecord = await CrateService.instance.getCratesForUser(session.userId);
       } catch (_) {
         crateRecord = null;
       }
+      try {
+        final assignments =
+            await AssignmentService.instance.getForSalesman(session.userId);
+        vehicle = assignments
+            .map((a) => a.vehicleNumber)
+            .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _summary = summary;
           _crateRecord = crateRecord;
+          _vehicle = vehicle;
         });
       }
     } catch (_) {
-      // real app: surface retry state
+      if (mounted) setState(() => _error = 'Could not load dashboard.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _openThenReload(Widget page) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+    if (mounted) await _loadDashboard();
   }
 
   void _onNavTap(int index) {
@@ -99,12 +120,10 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
       case 0:
         break;
       case 1:
-        Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const SalesmanActivityOrdersScreen()));
+        _openThenReload(const SalesmanActivityOrdersScreen());
         break;
       case 2:
-        Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const SalesmanDeliveryPendingScreen()));
+        _openThenReload(const SalesmanDeliveryPendingScreen());
         break;
       case 3:
         Navigator.push(
@@ -126,6 +145,12 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
         title: const Text('Sales Dashboard'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.route_outlined),
+            tooltip: 'Today\'s route',
+            onPressed: () => Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const TrackingScreen())),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
             onPressed: _logout,
@@ -137,7 +162,9 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
       floatingActionButton: _buildFab(context),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : _error != null
+              ? LoadError(message: _error!, onRetry: _loadDashboard)
+              : RefreshIndicator(
               onRefresh: _loadDashboard,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
@@ -147,6 +174,7 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
                         ? summary!.salesmanName
                         : 'Salesman',
                     phoneNumber: summary?.salesmanPhoneNumber ?? '',
+                    vehicle: _vehicle,
                   ),
                   const SizedBox(height: 16),
                   StatCardGrid(cards: [
@@ -203,15 +231,13 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
           _FabMenuEntry(
             label: 'Order History',
             icon: Icons.history_rounded,
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const SalesmanActivityOrdersScreen())),
+            onTap: () => _openThenReload(const SalesmanActivityOrdersScreen()),
           ),
           const SizedBox(height: 12),
           _FabMenuEntry(
             label: 'Create Order',
             icon: Icons.add_shopping_cart_outlined,
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const SalesmanCreateOrderScreen())),
+            onTap: () => _openThenReload(const SalesmanCreateOrderScreen()),
           ),
           const SizedBox(height: 16),
         ],
@@ -228,8 +254,13 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
 class _ProfileHeaderCard extends StatelessWidget {
   final String name;
   final String phoneNumber;
+  final String vehicle;
 
-  const _ProfileHeaderCard({required this.name, required this.phoneNumber});
+  const _ProfileHeaderCard({
+    required this.name,
+    required this.phoneNumber,
+    required this.vehicle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -278,12 +309,9 @@ class _ProfileHeaderCard extends StatelessWidget {
                     const Icon(Icons.local_shipping_outlined,
                         color: Colors.white70, size: 14),
                     const SizedBox(width: 6),
-                    // TODO: no vehicle field exists anywhere in the
-                    // /salesman/dashboard/get/{id} response - wire this up
-                    // once the backend exposes a vehicle assignment (e.g. on
-                    // the User/Salesman record or a dedicated endpoint).
-                    const Text('Vehicle: Not assigned',
-                        style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    Text(
+                        'Vehicle: ${vehicle.isEmpty ? 'Not assigned' : vehicle}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 13)),
                   ],
                 ),
               ],
@@ -313,7 +341,11 @@ class _RecentTransactionsCard extends StatelessWidget {
                 const Text('Recent Transactions',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const SalesmanLedgerDashboardScreen())),
                   child: const Text('View All'),
                 ),
               ],

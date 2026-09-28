@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../models/ledger.dart';
 import '../../services/ledger_service.dart';
 import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/load_error.dart';
+import '../admin/admin_ledgers_screen.dart';
 import 'salesman_activity_orders_screen.dart';
 import 'salesman_crates_screen.dart';
 import 'salesman_dashboard_screen.dart';
 import 'salesman_delivery_pending_screen.dart';
 
-/// Port of res/layout/activity_salesman_ledger_dashboard.xml:
-/// Overview/Transactions tab row, Balance summary card, Outstanding/Wallet
-/// stat pair, search field, and a scrolling transaction list.
 class SalesmanLedgerDashboardScreen extends StatefulWidget {
   const SalesmanLedgerDashboardScreen({super.key});
 
@@ -25,7 +23,8 @@ class _SalesmanLedgerDashboardScreenState
     extends State<SalesmanLedgerDashboardScreen> {
   bool _showOverview = true;
   bool _isLoading = true;
-  List<Ledger> _ledgers = [];
+  String? _error;
+  SalesmanLedgerDashboard? _dashboard;
 
   @override
   void initState() {
@@ -36,13 +35,16 @@ class _SalesmanLedgerDashboardScreenState
   Future<void> _load() async {
     final session = SessionManager.instance.current;
     if (session == null) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final ledgers =
-          await LedgerService.instance.getLedgersForSalesman(session.userId);
-      if (mounted) setState(() => _ledgers = ledgers);
+      final dashboard =
+          await LedgerService.instance.getSalesmanDashboard(session.userId);
+      if (mounted) setState(() => _dashboard = dashboard);
     } catch (_) {
-      // real app: surface an error state / retry
+      if (mounted) setState(() => _error = 'Could not load ledger.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -57,50 +59,55 @@ class _SalesmanLedgerDashboardScreenState
       _ => null,
     };
     if (destination != null) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => destination));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => destination));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final data = _dashboard;
     return Scaffold(
       appBar: AppBar(title: const Text('Ledger')),
       bottomNavigationBar: AppBottomNav(currentIndex: 4, onTap: _onNavTap),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _TabButton(
-                    label: 'Overview',
-                    selected: _showOverview,
-                    onTap: () => setState(() => _showOverview = true),
-                  ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? LoadError(message: _error!, onRetry: _load)
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _TabButton(
+                              label: 'Overview',
+                              selected: _showOverview,
+                              onTap: () => setState(() => _showOverview = true),
+                            ),
+                          ),
+                          Expanded(
+                            child: _TabButton(
+                              label: 'Retailers',
+                              selected: !_showOverview,
+                              onTap: () =>
+                                  setState(() => _showOverview = false),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _load,
+                        child: _showOverview
+                            ? _OverviewTab(data: data)
+                            : _RetailersTab(data: data),
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: _TabButton(
-                    label: 'Transactions',
-                    selected: !_showOverview,
-                    onTap: () => setState(() => _showOverview = false),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(
-                    onRefresh: _load,
-                    child: _showOverview
-                        ? _OverviewTab(ledgers: _ledgers)
-                        : _TransactionsTab(ledgers: _ledgers),
-                  ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -110,7 +117,8 @@ class _TabButton extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _TabButton({required this.label, required this.selected, required this.onTap});
+  const _TabButton(
+      {required this.label, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -141,17 +149,14 @@ class _TabButton extends StatelessWidget {
 }
 
 class _OverviewTab extends StatelessWidget {
-  final List<Ledger> ledgers;
-  const _OverviewTab({required this.ledgers});
+  final SalesmanLedgerDashboard? data;
+  const _OverviewTab({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    // TODO: replace placeholder totals with a real aggregation once the
-    // /ledger summary endpoint response shape is confirmed.
-    const balance = -2494.00;
-    const outstanding = -11108.00;
-    const wallet = 8614.00;
-
+    final wallet = data?.wallet ?? 0;
+    final outstanding = data?.outstanding ?? 0;
+    final balance = data?.balance ?? 0;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -164,11 +169,14 @@ class _OverviewTab extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Balance', style: TextStyle(color: AppColors.textSecondary)),
+                const Text('Balance',
+                    style: TextStyle(color: AppColors.textSecondary)),
                 Text(
                   formatCurrency(balance),
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.danger),
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: balance < 0 ? AppColors.danger : AppColors.primary),
                 ),
               ],
             ),
@@ -178,100 +186,91 @@ class _OverviewTab extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _SummaryTile(
-                  label: 'Outstanding', value: outstanding, negative: true),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const Text('Outstanding',
+                          style: TextStyle(color: AppColors.textSecondary)),
+                      Text(formatCurrency(outstanding),
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.danger)),
+                    ],
+                  ),
+                ),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _SummaryTile(label: 'Wallet', value: wallet, negative: false),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        const Text('Retailer Ledgers',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        if (ledgers.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Text('No ledgers assigned yet.',
-                style: TextStyle(color: AppColors.textMuted)),
-          )
-        else
-          ...ledgers.map((l) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: AppColors.primaryLight,
-                    child: Icon(Icons.storefront, color: AppColors.primary),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const Text('Wallet',
+                          style: TextStyle(color: AppColors.textSecondary)),
+                      Text(formatCurrency(wallet),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                  title: Text(l.retailerName ?? 'Retailer #${l.retailerId}'),
-                  subtitle: Text(l.active ? 'Active' : 'Inactive'),
-                  trailing: const Icon(Icons.chevron_right),
                 ),
-              )),
-      ],
-    );
-  }
-}
-
-class _SummaryTile extends StatelessWidget {
-  final String label;
-  final double value;
-  final bool negative;
-
-  const _SummaryTile({required this.label, required this.value, required this.negative});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-            const SizedBox(height: 4),
-            Text(
-              formatCurrency(value),
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: negative ? AppColors.danger : AppColors.textPrimary,
               ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 }
 
-class _TransactionsTab extends StatelessWidget {
-  final List<Ledger> ledgers;
-  const _TransactionsTab({required this.ledgers});
+class _RetailersTab extends StatelessWidget {
+  final SalesmanLedgerDashboard? data;
+  const _RetailersTab({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    final ledgers = data?.ledgers ?? const [];
+    if (ledgers.isEmpty) {
+      return ListView(
+        children: const [
+          Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(
+                child: Text('No ledgers assigned yet.',
+                    style: TextStyle(color: AppColors.textMuted))),
+          ),
+        ],
+      );
+    }
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      children: [
-        TextField(
-          decoration: const InputDecoration(
-            hintText: 'Search Ledger...',
-            prefixIcon: Icon(Icons.search),
+      itemCount: ledgers.length,
+      itemBuilder: (context, i) {
+        final row = ledgers[i];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: AppColors.primaryLight,
+              child: Icon(Icons.storefront, color: AppColors.primary),
+            ),
+            title: Text(row.ledger.retailerName ??
+                'Retailer #${row.ledger.retailerId}'),
+            subtitle: Text(formatCurrency(row.amount)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LedgerDetailScreen(ledgerId: row.ledgerId),
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        // Bind to LedgerService.getTransactions(ledgerId) per selected ledger
-        // once a ledger is chosen from the Overview tab.
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 32),
-          child: Center(
-            child: Text('Select a retailer from Overview to see transactions.',
-                style: TextStyle(color: AppColors.textMuted)),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

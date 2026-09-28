@@ -173,5 +173,8 @@ public class ShopDao {
         this.lastUpdated = dto.getLastUpdated();
         this.shopId = dto.getShopId();
         this.userId = dto.getUserId();
+        if (dto.getGst() != null) {
+            this.setGst(new GSTDao(dto.getGst()));
+        }
     }
 }

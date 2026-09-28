@@ -22,9 +22,9 @@ dependencies:
 
   # Formatting currency (₹) and dates the same way the Android app does
   intl: ^0.19.0
-
-  # Typography - DESIGN.md specifies "Inter" for headline/body/label fonts
   google_fonts: ^6.2.1
+  geolocator: ^13.0.2
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

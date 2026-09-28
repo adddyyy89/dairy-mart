@@ -130,8 +130,7 @@ public class RetailOrderController {
             logger.error("Invalid salesman id provided.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(gson.toJson("Invalid salesman id provided."));
         }
-        List<SalesmanToRetailDao> salesmanToRetailDaos = salesmanToRetailService.getAllRetailsforSalesman(salesmanId);
-        List<RetailOrderDao> retailOrderDaos = retailOrderService.getOrdersForRetailers(salesmanToRetailDaos.stream().map(SalesmanToRetailDao::getRetailerId).collect(Collectors.toList()));
+        List<RetailOrderDao> retailOrderDaos = retailOrderService.getOrdersForSalesman(salesmanId);
         List<RetailOrderDTO> retailOrderDTOS = new ArrayList<>();
         for(RetailOrderDao d : retailOrderDaos) {
             retailOrderDTOS.add(new RetailOrderDTO(d));

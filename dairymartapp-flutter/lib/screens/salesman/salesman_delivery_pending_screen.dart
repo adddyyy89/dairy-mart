@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../models/order.dart';
+import '../../services/location_ping.dart';
 import '../../services/order_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/status_chip.dart';
+import 'order_details_screen.dart';
 import 'salesman_activity_orders_screen.dart';
 import 'salesman_crates_screen.dart';
 import 'salesman_dashboard_screen.dart';
@@ -35,6 +37,7 @@ class _SalesmanDeliveryPendingScreenState
     super.initState();
     _load();
     _loadSalesmanName();
+    LocationPing.instance.start();
   }
 
   Future<void> _loadSalesmanName() async {
@@ -180,10 +183,16 @@ class _SalesmanDeliveryPendingScreenState
                               final order = filtered[i];
                               return Card(
                                 child: ListTile(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            OrderDetailsScreen(order: order)),
+                                  ),
                                   title: Text(order.retailerShopName ??
                                       'Order #${order.orderId}'),
                                   subtitle: Text(
-                                      '${order.orderDetails.length} items • ${order.totalUnits} units'),
+                                      '${order.retailerShopName != null ? 'Order #${order.orderId} • ' : ''}${order.orderDetails.length} items • ${order.totalUnits} units'),
                                   trailing: _showPending
                                       ? FilledButton(
                                           onPressed: () => _markDelivered(order),

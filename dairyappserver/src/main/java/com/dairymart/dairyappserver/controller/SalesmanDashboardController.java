@@ -30,7 +30,7 @@ public class SalesmanDashboardController {
     private UserWalletService userWalletService;
 
     @Autowired
-    private SalesmanToRetailService salesmanToRetailService;
+    private RetailOrderService retailOrderService;
 
     @Autowired
     private CrateService crateService;
@@ -51,7 +51,7 @@ public class SalesmanDashboardController {
         UserWalletDao walletDao = userWalletService.getWalletDetails(salesmanId);
         UserDao userDao = userService.findById(salesmanId);
 
-        List<SalesmanOrdersDao> salesmanOrdersDaos = salesmanToRetailService.getCurrentOrdersPlaced(salesmanId);
+        int ordersPlaced = retailOrderService.getOrdersForSalesman(salesmanId).size();
 
         int cratesAssigned = crateService.getCurrentAssignedCrateForUser(salesmanId);
 
@@ -63,7 +63,7 @@ public class SalesmanDashboardController {
 
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("walletbalance", walletDao != null ? walletDao.getBalance() : "??");
-        jsonObject.put("ordersplaced", salesmanOrdersDaos.size());
+        jsonObject.put("ordersplaced", ordersPlaced);
         jsonObject.put("cratesassigned", cratesAssigned);
         jsonObject.put("salesmanname", userDao.getFirstName() + " " + userDao.getLastName());
         jsonObject.put("salesmanphonenumber", userDao.getPhoneNumber());

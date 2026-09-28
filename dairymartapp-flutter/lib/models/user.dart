@@ -1,3 +1,5 @@
+import '../utils/json_unwrap.dart';
+
 /// Maps to the `role` field returned by POST /auth/login and the
 /// `userTypeId` used everywhere else in the backend.
 /// Source: MainActivity.java login callback -
@@ -46,7 +48,6 @@ class AuthSession {
   });
 }
 
-/// Maps to UserDTO from GET /user/get/{id}
 class AppUser {
   final int userId;
   final String phoneNumber;
@@ -74,16 +75,16 @@ class AppUser {
       lastName != null && lastName!.isNotEmpty ? '$firstName $lastName' : firstName;
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
-    final type = json['type'] as Map<String, dynamic>?;
+    final type = asMap(json['type']);
     return AppUser(
-      userId: json['userId'] ?? 0,
+      userId: asInt(json['userId']),
       phoneNumber: json['phoneNumber'] ?? '',
       firstName: json['firstName'] ?? '',
-      lastName: json['lastName'],
-      userTypeId: json['userTypeId'] ?? 0,
-      userTypeDesc: type?['userTypeDesc'],
-      emailId: json['emailId'],
-      crateCount: json['crateCount'] ?? 0,
+      lastName: json['lastName']?.toString(),
+      userTypeId: asInt(json['userTypeId'] ?? type['userTypeId']),
+      userTypeDesc: type['userTypeDesc']?.toString(),
+      emailId: json['emailId']?.toString(),
+      crateCount: asInt(json['crateCount']),
       isActive: json['isActive'] ?? true,
     );
   }

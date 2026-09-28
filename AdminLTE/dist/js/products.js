@@ -35,7 +35,7 @@ async function loadProductTypeData() {
         if (!response.ok) throw new Error("Product types not found");
         
         const data = await response.json();
-        productTypes = data; 
+        productTypes = asList ? asList(data) : data; 
 
         const productTypeField = document.getElementById("productTypeId");
         productTypeField.innerHTML = '<option value="" selected disabled>Select Product Type</option>';
@@ -44,7 +44,7 @@ async function loadProductTypeData() {
             // Map JSON keys to your table columns
             console.log(productType);
             const row = `
-                <option value="">${productType.productTypeName}</option>
+                <option value="${productType.productTypeId}">${productType.productTypeName}</option>
             `;
             productTypeField.innerHTML += row;
         });

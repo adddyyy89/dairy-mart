@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/shop")
 public class ShopController {
@@ -33,8 +34,14 @@ public class ShopController {
         logger.info("getAllShop called.");
 
         List<ShopDao> shopDaos = shopService.getAllShops();
-        List<ShopDTO> shopDTOList = new ArrayList<>(shopDaos.size());
-        shopDaos.stream().forEach(x -> shopDTOList.add(new ShopDTO(x)));
+        List<ShopDTO> shopDTOList = new ArrayList<>();
+        for (ShopDao x : shopDaos) {
+            try {
+                shopDTOList.add(new ShopDTO(x));
+            } catch (Exception ex) {
+                logger.error("Skipping shop id {} while listing shops", x.getShopId(), ex);
+            }
+        }
 
         logger.info("All Shop details fetched");
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(shopDTOList));
