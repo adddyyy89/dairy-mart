@@ -77,7 +77,9 @@ async function loadRoleUsers() {
   const typeId = Number(document.body.dataset.userType || 2);
   const meta = ROLE_PAGES[typeId] || ROLE_PAGES[2];
   const tableBody = document.getElementById('users-table');
-  tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>';
+  const isSalesmanPage = typeId === 2;
+  const colSpan = isSalesmanPage ? 10 : 6;
+  tableBody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-muted">Loading...</td></tr>`;
 
   let users = [];
   try {
@@ -88,13 +90,45 @@ async function loadRoleUsers() {
       const all = await apiGet('/user/get/all');
       users = asList(all).filter((u) => Number(u.userTypeId || u.typeId || u.type?.userTypeId) === typeId);
     } catch (inner) {
-      tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${inner.message || err.message}</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-danger">${inner.message || err.message}</td></tr>`;
       return;
     }
   }
 
+  const walletsByUser = {};
+  if (isSalesmanPage) {
+    try {
+      const wallets = asList(await apiGet('/admin/wallets/salesmen'));
+      wallets.forEach((w) => { walletsByUser[Number(w.userId)] = w; });
+      const totalsEl = document.getElementById('wallet-totals');
+      if (totalsEl) {
+        const walletSum = wallets.reduce((s, w) => s + Number(w.walletBalance || 0), 0);
+        const pendingSum = wallets.reduce((s, w) => s + Number(w.pending || 0), 0);
+        const receivedSum = wallets.reduce((s, w) => s + Number(w.received || 0), 0);
+        totalsEl.innerHTML = `
+          <div class="col-md-4">
+            <div class="small-box text-bg-primary">
+              <div class="inner"><h3>${formatInr(walletSum)}</h3><p>Current wallet (all salesmen)</p></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="small-box text-bg-warning">
+              <div class="inner"><h3>${formatInr(pendingSum)}</h3><p>Pending collections</p></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="small-box text-bg-success">
+              <div class="inner"><h3>${formatInr(receivedSum)}</h3><p>Received collections</p></div>
+            </div>
+          </div>`;
+      }
+    } catch (walletErr) {
+      console.warn('Could not load salesman wallets', walletErr);
+    }
+  }
+
   if (!users.length) {
-    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${meta.empty}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-muted">${meta.empty}</td></tr>`;
     return;
   }
 
@@ -109,9 +143,18 @@ async function loadRoleUsers() {
     const action = active
       ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); toggleUserActive(${id}, false)">Mark inactive</button>`
       : `<button type="button" class="btn btn-sm btn-outline-success" onclick="event.stopPropagation(); toggleUserActive(${id}, true)">Activate</button>`;
+    const wallet = walletsByUser[Number(id)] || {};
+    const walletCols = isSalesmanPage
+      ? `<td>${formatInr(wallet.walletBalance || 0)}</td>
+         <td>${formatInr(wallet.pending || 0)}</td>
+         <td>${formatInr(wallet.received || 0)}</td>`
+      : '';
+    const track = isSalesmanPage
+      ? `<td><a class="btn btn-sm btn-primary" href="salesmandetail.html?id=${id}" onclick="event.stopPropagation()">Track</a></td>`
+      : '';
     return `
       <tr class="${rowClass}">
-        <td><a href="userdetails.html?id=${id}" class="link-primary">${name}</a></td>
+        <td><a href="${isSalesmanPage ? 'salesmandetail.html?id=' + id : 'userdetails.html?id=' + id}" class="link-primary">${name}</a></td>
         <td><span class="badge bg-info text-dark">${typeLabel(user, typeId)}</span></td>
         <td>${phone}</td>
         <td>${email}</td>
@@ -120,6 +163,8 @@ async function loadRoleUsers() {
           <span class="badge ${active ? 'bg-success' : 'bg-secondary'}">${active ? 'Active' : 'Inactive'}</span>
           <div class="mt-2">${action}</div>
         </td>
+        ${walletCols}
+        ${track}
       </tr>`;
   }).join('');
 }

@@ -7,6 +7,7 @@ import com.dairymart.dairyappserver.dto.UserTypeDTO;
 import com.dairymart.dairyappserver.service.UserService;
 import com.dairymart.dairyappserver.service.UserTypeService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/usertype")
+@Tag(name = "User types", description = "Role ids: 1 admin, 2 salesman, 3 retailer")
 public class UserTypeController {
 
     Logger logger = LoggerFactory.getLogger(UserTypeController.class);

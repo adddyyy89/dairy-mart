@@ -64,7 +64,9 @@ class LedgerTransaction {
       amount: asDouble(json['amount']),
       isCredit: json['credit'] ?? false,
       isDebit: json['debit'] ?? false,
-      paymentTypeDesc: paymentType['paymentTypeDesc']?.toString(),
+      paymentTypeDesc: paymentType['paymentTypeDesc']?.toString() ??
+          paymentType['paymentTypeName']?.toString() ??
+          paymentType['productTypeName']?.toString(),
       createdOn: DateTime.tryParse(json['createdOn']?.toString() ?? '') ??
           DateTime.now(),
     );

@@ -8,7 +8,7 @@ function loadSidebar(basePath = './') {
           <img src="${basePath}assets/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image opacity-75 shadow" />
           <!--end::Brand Image-->
           <!--begin::Brand Text-->
-          <span class="brand-text fw-light">Diary Mart</span>
+          <span class="brand-text fw-light">Dairy Mart</span>
           <!--end::Brand Text-->
         </a>
         <!--end::Brand Link-->
@@ -22,8 +22,32 @@ function loadSidebar(basePath = './') {
             aria-label="Main navigation" data-accordion="false" id="navigation">
             <li class="nav-item">
               <a href="${basePath}home.html" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Dairy Mart</p>
+                <i class="nav-icon bi bi-speedometer2"></i>
+                <p>Dashboard</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="${basePath}pages/analytics.html" class="nav-link">
+                <i class="nav-icon bi bi-bar-chart"></i>
+                <p>Analytics</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="${basePath}pages/activity.html" class="nav-link">
+                <i class="nav-icon bi bi-activity"></i>
+                <p>Activity</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="${basePath}pages/sessions.html" class="nav-link">
+                <i class="nav-icon bi bi-broadcast"></i>
+                <p>Online &amp; logins</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="${basePath}pages/livemap.html" class="nav-link">
+                <i class="nav-icon bi bi-geo-alt"></i>
+                <p>Live map</p>
               </a>
             </li>
             <li class="nav-item">
@@ -63,15 +87,33 @@ function loadSidebar(basePath = './') {
               </a>
             </li>
             <li class="nav-item">
+              <a href="${basePath}pages/notifications.html" class="nav-link">
+                <i class="nav-icon bi bi-bell"></i>
+                <p>Notifications</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="${basePath}pages/crates.html" class="nav-link">
+                <i class="nav-icon bi bi-box"></i>
+                <p>Crates</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="${basePath}pages/inventory.html" class="nav-link">
+                <i class="nav-icon bi bi-clipboard-data"></i>
+                <p>Inventory</p>
+              </a>
+            </li>
+            <li class="nav-item">
               <a href="${basePath}pages/products.html" class="nav-link">
                 <i class="nav-icon bi bi-box-seam"></i>
                 <p>Products</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="${basePath}pages/addproduct.html" class="nav-link">
-                <i class="nav-icon bi bi-plus-square"></i>
-                <p>Add Product</p>
+              <a href="${basePath}pages/settings.html" class="nav-link">
+                <i class="nav-icon bi bi-gear"></i>
+                <p>Settings</p>
               </a>
             </li>
           </ul>

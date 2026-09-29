@@ -9,14 +9,28 @@ class LoadError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final serverDown = message.toLowerCase().contains('server is down');
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
+            Icon(
+              serverDown ? Icons.cloud_off_outlined : Icons.error_outline,
+              color: AppColors.danger,
+              size: 40,
+            ),
             const SizedBox(height: 12),
+            Text(
+              serverDown ? 'The server is down' : 'Something went wrong',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppColors.textSecondary)),

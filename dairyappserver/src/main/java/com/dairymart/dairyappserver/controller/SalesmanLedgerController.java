@@ -12,6 +12,7 @@ import com.dairymart.dairyappserver.service.LedgerService;
 import com.dairymart.dairyappserver.service.SalesmanToRetailService;
 import com.dairymart.dairyappserver.service.UserWalletService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/salesman/ledger")
+@Tag(name = "Salesman ledger", description = "Salesman app ledger view")
 public class SalesmanLedgerController {
 
     Logger logger = LoggerFactory.getLogger(SalesmanLedgerController.class);

@@ -10,8 +10,7 @@ import com.dairymart.dairyappserver.service.CrateService;
 import com.dairymart.dairyappserver.service.UserService;
 import com.dairymart.dairyappserver.service.UserWalletService;
 import com.google.gson.Gson;
-import com.sun.net.httpserver.HttpsServer;
-import org.apache.catalina.User;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +26,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/user")
+@Tag(name = "Users", description = "Create and maintain admin, salesman, and retailer accounts")
 public class UserController {
 
     Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -138,7 +138,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unable to get the user using id = " + userId);
         }
 
-        logger.info("User details fetched. {}", userDTO);
+        logger.info("User details fetched for userId={}", userId);
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(userDTO));
     }
 

@@ -5,7 +5,9 @@ import '../../services/order_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/notification_bell.dart';
 import '../../widgets/status_chip.dart';
 import 'order_details_screen.dart';
 import 'salesman_activity_orders_screen.dart';
@@ -73,15 +75,26 @@ class _SalesmanDeliveryPendingScreenState
       .toList();
 
   Future<void> _markDelivered(RetailOrder order) async {
+    if (order.hasStockShortfall) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Branch stock is short for this order. Update inventory before delivering.'),
+          ),
+        );
+      }
+      return;
+    }
     try {
       // 5 = DELIVERED in public.orderstatus (confirmed against the DB
       // table - NOT 3, which is actually REJECTED).
       await OrderService.instance.updateOrderStatus(order: order, newStatusId: 5);
       _load();
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Could not mark delivered.')));
+            .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
       }
     }
   }
@@ -129,8 +142,7 @@ class _SalesmanDeliveryPendingScreenState
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold)),
                       ),
-                      const Icon(Icons.notifications_none_rounded,
-                          color: AppColors.primary),
+                      const NotificationBellTinted(),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -192,10 +204,12 @@ class _SalesmanDeliveryPendingScreenState
                                   title: Text(order.retailerShopName ??
                                       'Order #${order.orderId}'),
                                   subtitle: Text(
-                                      '${order.retailerShopName != null ? 'Order #${order.orderId} • ' : ''}${order.orderDetails.length} items • ${order.totalUnits} units'),
+                                      '${order.retailerShopName != null ? 'Order #${order.orderId} • ' : ''}${order.orderDetails.length} items • ${order.totalUnits} units${order.hasStockShortfall ? ' • stock short' : ''}'),
                                   trailing: _showPending
                                       ? FilledButton(
-                                          onPressed: () => _markDelivered(order),
+                                          onPressed: order.hasStockShortfall
+                                              ? null
+                                              : () => _markDelivered(order),
                                           child: const Text('Mark Delivered'),
                                         )
                                       : StatusChip(label: order.statusDescription),

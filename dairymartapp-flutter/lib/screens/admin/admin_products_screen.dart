@@ -3,6 +3,7 @@ import '../../models/product.dart';
 import '../../services/product_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
 
 class AdminProductsScreen extends StatefulWidget {
@@ -32,8 +33,8 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
       final products =
           await ProductService.instance.getAllProducts(forceRefresh: true);
       if (mounted) setState(() => _products = products);
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load products.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

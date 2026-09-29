@@ -52,7 +52,7 @@ public class UserDao {
     private int crateCount;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "typeid", insertable = false, updatable = false)
+    @JoinColumn(name = "typeid", referencedColumnName = "usertypeid", insertable = false, updatable = false)
     private UserTypeDao type;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)

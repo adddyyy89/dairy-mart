@@ -6,6 +6,7 @@ import com.dairymart.dairyappserver.dto.SalesmanToRetailDTO;
 import com.dairymart.dairyappserver.dto.UserWalletDTO;
 import com.dairymart.dairyappserver.service.*;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/salesman/dashboard")
+@Tag(name = "Salesman dashboard", description = "Salesman app home counts")
 public class SalesmanDashboardController {
 
     Logger logger = LoggerFactory.getLogger(SalesmanDashboardController.class);

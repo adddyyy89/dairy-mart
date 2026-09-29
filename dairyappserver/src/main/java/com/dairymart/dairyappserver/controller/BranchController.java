@@ -7,6 +7,7 @@ import com.dairymart.dairyappserver.dto.UserDTO;
 import com.dairymart.dairyappserver.service.BranchService;
 import com.dairymart.dairyappserver.service.UserService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import java.util.List;
 @CrossOrigin("*")
 @RestController
 @RequestMapping("/branch")
+@Tag(name = "Branches", description = "Branch master data")
 public class BranchController {
 
     Logger logger = LoggerFactory.getLogger(BranchController.class);

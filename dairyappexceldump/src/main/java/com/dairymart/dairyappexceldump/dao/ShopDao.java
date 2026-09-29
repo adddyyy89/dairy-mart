@@ -1,7 +1,6 @@
 package com.dairymart.dairyappexceldump.dao;
 
 import jakarta.persistence.*;
-import org.apache.catalina.User;
 
 import java.sql.Date;
 

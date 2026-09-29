@@ -30,6 +30,30 @@ public class UserWalletService {
         return wallets.isEmpty() ? null : wallets.get(0);
     }
 
+    public UserWalletDao getOrCreateWallet(int userId) {
+        UserWalletDao existing = getWalletDetails(userId);
+        if (existing != null) {
+            return existing;
+        }
+        java.sql.Date now = new java.sql.Date(System.currentTimeMillis());
+        UserWalletDao wallet = new UserWalletDao();
+        wallet.setUserId(userId);
+        wallet.setBalance(0);
+        wallet.setOutstanding(0);
+        wallet.setCreatedOn(now);
+        wallet.setLastUpdated(now);
+        wallet.setCreatedBy(0);
+        return walletRepository.save(wallet);
+    }
+
+    public UserWalletDao applyDelta(int userId, double balanceDelta, double outstandingDelta) {
+        UserWalletDao wallet = getOrCreateWallet(userId);
+        wallet.setBalance(wallet.getBalance() + balanceDelta);
+        wallet.setOutstanding(wallet.getOutstanding() + outstandingDelta);
+        wallet.setLastUpdated(new java.sql.Date(System.currentTimeMillis()));
+        return walletRepository.save(wallet);
+    }
+
     public UserWalletDao addWalletDetails(UserWalletDao walletDao) {
         return walletRepository.save(walletDao);
     }

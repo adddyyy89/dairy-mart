@@ -1,32 +1,44 @@
 package com.dairymart.dairyappexceldump;
 
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.FileContent;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
-import org.apache.xmlbeans.ResourceLoader;
+import com.google.api.services.drive.DriveScopes;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.security.GeneralSecurityException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 
+/**
+ * Uploads the dump workbook to Drive when credentials and a folder id are configured.
+ * Skips quietly if those are missing so a local dump still succeeds.
+ */
 @Component
 public class GoogleDriveUploadTasklet implements Tasklet {
 
-    private static final String APPLICATION_NAME = "Daily Data Exporter";
-    private static final JacksonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final Logger logger = LoggerFactory.getLogger(GoogleDriveUploadTasklet.class);
+    private static final String APPLICATION_NAME = "Dairy Mart Excel Dump";
 
-    @Value("${google.drive.credentials.path}")
-    private String credentialsPath; // Path to service-account-key.json
-    @Value("${google.drive.folder.id}")
+    @Value("${google.drive.credentials.path:}")
+    private String credentialsPath;
+
+    @Value("${google.drive.folder.id:}")
     private String folderId;
-    @Value("${google.drive.output.file.path:./exported_data.xlsx}") // Default path
-    private String excelFilePath;
 
     private final ResourceLoader resourceLoader;
 
@@ -36,66 +48,39 @@ public class GoogleDriveUploadTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-        System.out.println("Starting Google Drive upload for file: " + excelFilePath);
-        try {
-            uploadFileToGoogleDrive();
-            System.out.println("File uploaded to Google Drive successfully.");
-            // Optionally, delete the local file after successful upload
-            File localFile = new File(excelFilePath);
-            if (localFile.exists()) {
-                if (localFile.delete()) {
-                    System.out.println("Local Excel file deleted: " + excelFilePath);
-                } else {
-                    System.err.println("Failed to delete local Excel file: " + excelFilePath);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error uploading file to Google Drive: " + e.getMessage());
-            throw e; // Propagate exception to fail the batch step
+        String excelFilePath = chunkContext.getStepContext().getStepExecution().getJobExecution()
+                .getExecutionContext().getString(BatchConfig.EXCEL_FILE_KEY, "");
+        if (excelFilePath.isBlank() || folderId == null || folderId.isBlank()
+                || "your_google_drive_folder_id".equals(folderId) || credentialsPath == null || credentialsPath.isBlank()) {
+            logger.info("Skipping Google Drive upload (no folder id or credentials).");
+            return RepeatStatus.FINISHED;
         }
-        return RepeatStatus.FINISHED;
-    }
-
-    private Drive getDriveService() throws IOException, GeneralSecurityException {
-        // Load credentials from the service account key file
         Resource resource = resourceLoader.getResource(credentialsPath);
         if (!resource.exists()) {
-            throw new IOException("Service account key file not found: " + credentialsPath);
+            logger.info("Skipping Google Drive upload (credentials file not found).");
+            return RepeatStatus.FINISHED;
         }
-
-        InputStream in = resource.getInputStream();
-        GoogleCredentials credentials = GoogleCredentials.fromStream(in)
-                .createScoped(Collections.singleton(DriveScopes.DRIVE_FILE));
-
-        return new Drive.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, new HttpCredentialsAdapter(credentials))
-                .setApplicationName(APPLICATION_NAME)
-                .build();
-    }
-
-    private void uploadFileToGoogleDrive() throws IOException, GeneralSecurityException {
-        Drive service = getDriveService();
-
         File uploadFile = new File(excelFilePath);
         if (!uploadFile.exists()) {
-            throw new IOException("Excel file not found for upload: " + excelFilePath);
+            throw new IllegalStateException("Excel dump file was not found: " + excelFilePath);
         }
-
-        // Generate a dynamic name for the Google Drive file
-        String googleDriveFileName = "DailyDataExport_" +
-                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
-
-        com.google.api.services.drive.model.File fileMetadata = new com.google.api.services.drive.model.File();
-        fileMetadata.setName(googleDriveFileName);
-        fileMetadata.setParents(Collections.singletonList(folderId)); // Set the parent folder
-
-        FileContent mediaContent = new FileContent("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", uploadFile);
-
-        com.google.api.services.drive.model.File uploadedFile = service.files().create(fileMetadata, mediaContent)
-                .setFields("id,webContentLink,webViewLink")
-                .execute();
-
-        System.out.println("File ID: " + uploadedFile.getId());
-        System.out.println("Web Content Link: " + uploadedFile.getWebContentLink()); // Direct download link
-        System.out.println("Web View Link: " + uploadedFile.getWebViewLink());       // View in browser link
+        try (InputStream in = resource.getInputStream()) {
+            GoogleCredentials credentials = GoogleCredentials.fromStream(in)
+                    .createScoped(Collections.singleton(DriveScopes.DRIVE_FILE));
+            Drive service = new Drive.Builder(
+                    GoogleNetHttpTransport.newTrustedTransport(),
+                    GsonFactory.getDefaultInstance(),
+                    new HttpCredentialsAdapter(credentials))
+                    .setApplicationName(APPLICATION_NAME)
+                    .build();
+            com.google.api.services.drive.model.File fileMetadata = new com.google.api.services.drive.model.File();
+            fileMetadata.setName("DairyMartDump_" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".xlsx");
+            fileMetadata.setParents(Collections.singletonList(folderId));
+            FileContent mediaContent = new FileContent(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", uploadFile);
+            service.files().create(fileMetadata, mediaContent).setFields("id").execute();
+            logger.info("Uploaded dump to Google Drive.");
+        }
+        return RepeatStatus.FINISHED;
     }
 }

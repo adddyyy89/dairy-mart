@@ -5,6 +5,7 @@ import '../../services/assignment_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -77,8 +78,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _shop = shop;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load profile.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

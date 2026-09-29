@@ -5,6 +5,7 @@ import '../../models/tracking_point.dart';
 import '../../services/session_manager.dart';
 import '../../services/tracking_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
 
 class TrackingScreen extends StatefulWidget {
@@ -38,7 +39,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       final points = await TrackingService.instance.getForDay(userId: _userId);
       if (mounted) setState(() => _points = points);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not load today\'s route.');
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

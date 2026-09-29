@@ -46,6 +46,12 @@ class ApiConfig {
   static String crateGetByUser(int userId) => '/crate/get/user/$userId';
   static String crateAssignedToUser(int userId) =>
       '/crate/assigned/user/$userId';
+  static const String crateSummary = '/crate/summary';
+  static const String cratePoolAdd = '/crate/pool/add';
+  static const String crateAssign = '/crate/assign';
+  static const String crateStoreSend = '/crate/store/send';
+  static const String crateStoreReturn = '/crate/store/return';
+  static const String crateBranchReturn = '/crate/branch/return';
 
   // Salesman <-> Retailer assignment
   static const String assignSalesmanToRetail = '/salesmantoretail/assign';
@@ -60,6 +66,7 @@ class ApiConfig {
   static const String adminDashboard = '/admin/dashboard/get';
   static const String adminUsers = '/admin/users/get';
   static const String adminLedgers = '/admin/ledgers/get';
+  static const String adminSalesmanWallets = '/admin/wallets/salesmen';
   static String retailerDashboard(int userId) =>
       '/retailer/dashboard/get/$userId';
 
@@ -91,4 +98,10 @@ class ApiConfig {
   static String citiesByState(int stateId) =>
       '/address/city/getbystate/$stateId';
   static const String userTypeGetAll = '/usertype/get/all';
+
+  // In-app notifications
+  static String notifications(int userId) => '/notification/get/$userId';
+  static String notificationUnread(int userId) => '/notification/unread/$userId';
+  static String notificationRead(int notificationId) =>
+      '/notification/read/$notificationId';
 }

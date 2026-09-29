@@ -4,6 +4,8 @@ import com.dairymart.dairyappserver.dao.TrackingDao;
 import com.dairymart.dairyappserver.dto.TrackingDTO;
 import com.dairymart.dairyappserver.service.TrackingService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +20,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/tracking")
+@Tag(name = "Tracking", description = "Salesman GPS pings and live map positions")
 public class TrackingController {
 
     Logger logger = LoggerFactory.getLogger(TrackingController.class);
@@ -28,6 +32,7 @@ public class TrackingController {
     @Autowired
     private TrackingService trackingService;
 
+    @Operation(summary = "Location trail for a user on a date (dd-MM-yyyy)")
     @GetMapping(value = "/get", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getCrateDetailsByUserId(@RequestParam int userId, @RequestParam String date) {
         logger.info("Get crate details for user id: {}", userId);
@@ -48,6 +53,7 @@ public class TrackingController {
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(trackingDTOS));
     }
 
+    @Operation(summary = "Record a GPS ping from the salesman app")
     @PostMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> updateCrate(@RequestBody TrackingDTO trackingDTO) {
         logger.info("update tracking location called.");
@@ -60,7 +66,11 @@ public class TrackingController {
         }
         logger.info("update tracking location completed successfully.");
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new TrackingDTO(trackingDao)));
-
     }
 
+    @Operation(summary = "Latest known position of each salesman for the live map")
+    @GetMapping(value = "/live", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> liveSalesmen() {
+        return ResponseEntity.ok(gson.toJson(trackingService.getLiveSalesmen()));
+    }
 }

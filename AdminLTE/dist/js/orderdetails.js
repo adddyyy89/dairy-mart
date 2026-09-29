@@ -1,88 +1,74 @@
-
-
-document.addEventListener('DOMContentLoaded', function() {
-
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-
-    try {
-        const sessionString = sessionStorage.getItem('user');
-        const userData = JSON.parse(sessionString);
-        const username = userData.phoneNumber;
-        const password = userData.password;
-        const encodedCredentials = btoa(`${username}:${password}`);
-        const response = fetch(`http://localhost:8080/retailorder/get/${id}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                // Add the Authorization header here
-                'Authorization': `Basic ${encodedCredentials}`
-            }
-        }).then(response => {
-            if (response.status === 401) throw new Error('Unauthorized: Invalid credentials');
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
-        .then(data => {
-            renderOrderData(data);
-        })
-        .catch(error => {
-            console.error('Error fetching order:', error);
-            document.querySelector('.order-card').innerHTML =
-                `<div class="alert alert-danger">
-                    <strong>Error:</strong> ${error.message}. <br>
-                    Make sure your credentials are correct and CORS is enabled on the server.
-                </div>`;
-        });
-
-    } catch (error) {
-        console.error("Error:", error);
-        alert("Could not load user details.");
+document.addEventListener('DOMContentLoaded', async function () {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  const card = document.querySelector('.order-card');
+  if (!id) {
+    if (card) {
+      card.innerHTML = '<div class="alert alert-danger">Missing order id.</div>';
     }
-
-    // dummy data for now
-    //originalData = dummyUserData;
-    //populateForm(dummyUserData);
+    return;
+  }
+  try {
+    const data = unwrap(await apiGet('/retailorder/get/' + id));
+    renderOrderData(data);
+  } catch (error) {
+    if (card) {
+      card.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${error.message || SERVER_DOWN_MESSAGE}</div>`;
+    }
+  }
 });
 
-
 function renderOrderData(data) {
+  data = unwrap(data);
+  const status = unwrap(data.status || {});
+  const retailer = unwrap(data.retailer || {});
+  const owner = unwrap(retailer.owner || {});
+  const branch = unwrap(data.branch || {});
+  const address = unwrap(retailer.address || {});
+  const updateText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val == null ? '' : String(val);
+  };
 
-    const retailerSalesmanDataMap = sessionStorage.getItem("retailerSalesmanDataMap");
-    const retailerSalesmanDataMapJSON = JSON.parse(retailerSalesmanDataMap);
-    const salesmanId = retailerSalesmanDataMapJSON[data.retailerId].userId;
-    const salesmanName = retailerSalesmanDataMapJSON[data.retailerId].firstName + " " + retailerSalesmanDataMapJSON[data.retailerId].lastName;
+  updateText('orderId', data.orderId);
+  updateText('orderDate', data.orderDate);
+  const statusEl = document.getElementById('statusDesc');
+  if (statusEl) {
+    statusEl.innerHTML = `<span class="badge bg-success">${status.statusDesc || ('Status ' + (data.orderStatusId || ''))}</span>`;
+  }
+  updateText('branchName', branch.branchName);
+  const retailerEl = document.getElementById('retailerName');
+  if (retailerEl) {
+    const name = retailer.shopName || ('Shop #' + (data.retailerId || ''));
+    retailerEl.innerHTML = owner.userId
+      ? `<a href="userdetails.html?id=${owner.userId}">${name}</a>`
+      : name;
+  }
+  updateText('retailerAddress', address.fullAddress);
 
+  const salesmanEl = document.getElementById('salesmanName');
+  try {
+    const map = JSON.parse(sessionStorage.getItem('retailerSalesmanDataMap') || 'null');
+    const row = map && map[data.retailerId];
+    if (salesmanEl && row) {
+      salesmanEl.innerHTML = `<a href="userdetails.html?id=${row.userId}">${[row.firstName, row.lastName].filter(Boolean).join(' ')}</a>`;
+    } else if (salesmanEl) {
+      salesmanEl.textContent = '';
+    }
+  } catch (_) {
+    if (salesmanEl) salesmanEl.textContent = '';
+  }
 
-    // Helper function to update text safely
-    const updateText = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-    };
-
-    // Map top-level details
-    document.getElementById('orderId').textContent = data.orderId;
-    document.getElementById('orderDate').textContent = data.orderDate;
-    document.getElementById('statusDesc').innerHTML = `<span class="badge bg-success">${data.status.statusDesc}</span>`;
-    document.getElementById('branchName').textContent = data.branch.branchName;
-    document.getElementById('retailerName').innerHTML = `<a href="userdetails.html?id=${data.retailer.owner.userId}">` + data.retailer.shopName;
-    document.getElementById('retailerAddress').textContent = data.retailer.address.fullAddress;
-    document.getElementById('salesmanName').innerHTML = `<a href="userdetails.html?id=${salesmanId}">` + salesmanName;
-
-    // Map Table Rows
-    const tableBody = document.getElementById('orderItemsTable');
-    tableBody.innerHTML = ''; // Clear loader if any
-
-    data.orderDetails.forEach(item => {
-        const row = `
-                <tr>
-                    <td><strong>${item.productCode}</strong></td>
-                    <td>${item.quantity}</td>
-                    <td>${item.unit}</td>
-                    <td>₹${item.saleRate}</td>
-                    <td>₹${item.purchaseRate}</td>
-                </tr>
-            `;
-        tableBody.innerHTML += row;
-    });
+  const tableBody = document.getElementById('orderItemsTable');
+  const lines = asList(data.orderDetails);
+  if (tableBody) {
+    tableBody.innerHTML = lines.map((item) => `
+      <tr>
+        <td><strong>${item.productCode || ''}</strong></td>
+        <td>${item.quantity || ''}</td>
+        <td>${item.unit || ''}</td>
+        <td>₹${item.saleRate || ''}</td>
+        <td>₹${item.purchaseRate || ''}</td>
+      </tr>`).join('');
+  }
 }

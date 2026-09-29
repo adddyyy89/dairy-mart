@@ -8,6 +8,7 @@ import '../../services/product_service.dart';
 import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
 
 class SalesmanCreateOrderScreen extends StatefulWidget {
@@ -67,8 +68,8 @@ class _SalesmanCreateOrderScreenState extends State<SalesmanCreateOrderScreen>
           _selected ??= assignments.isNotEmpty ? assignments.first : null;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load catalog.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

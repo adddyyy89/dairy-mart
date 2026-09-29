@@ -11,7 +11,7 @@ public class UserTypeDao {
 
     @Id
     @Column(name = "usertypeid")
-    @SequenceGenerator(name = "USERTYPE_ID", sequenceName = "`usertype_seq`", allocationSize = 1)
+    @SequenceGenerator(name = "USERTYPE_ID", sequenceName = "usertype_seq", allocationSize = 1)
     @GeneratedValue(generator = "USERTYPE_ID", strategy = GenerationType.SEQUENCE)
     private int userTypeId;
 

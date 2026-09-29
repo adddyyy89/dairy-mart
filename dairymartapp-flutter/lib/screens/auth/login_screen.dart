@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../../services/api_client.dart';
+import '../../utils/api_error.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/phone_input.dart';
@@ -59,8 +60,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _routeByRole(session.role);
     } on ApiException catch (e) {
       setState(() => _errorText = e.message);
-    } catch (_) {
-      setState(() => _errorText = 'Something went wrong. Please try again.');
+    } catch (e) {
+      setState(() => _errorText = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

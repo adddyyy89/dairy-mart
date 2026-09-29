@@ -7,6 +7,7 @@ import com.dairymart.dairyappserver.dto.ShopDTO;
 import com.dairymart.dairyappserver.service.ProductService;
 import com.dairymart.dairyappserver.service.ShopService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import java.util.List;
 @CrossOrigin("*")
 @RestController
 @RequestMapping("/shop")
+@Tag(name = "Shops", description = "Retailer stores")
 public class ShopController {
 
     Logger logger = LoggerFactory.getLogger(ShopController.class);

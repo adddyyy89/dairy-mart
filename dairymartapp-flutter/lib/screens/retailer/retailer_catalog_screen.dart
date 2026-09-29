@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../models/order.dart';
 import '../../models/product.dart';
-import '../../services/api_client.dart';
 import '../../services/assignment_service.dart';
 import '../../services/order_service.dart';
 import '../../services/product_service.dart';
 import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
 
 class RetailerCatalogScreen extends StatefulWidget {
@@ -58,9 +58,7 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e is ApiException
-              ? e.message
-              : 'Could not load products. Check the API URL and retry.';
+          _error = apiErrorMessage(e);
         });
       }
     } finally {
@@ -131,7 +129,7 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen>
       }
     } catch (e) {
       if (mounted) {
-        final message = e is ApiException ? e.message : e.toString();
+        final message = apiErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(

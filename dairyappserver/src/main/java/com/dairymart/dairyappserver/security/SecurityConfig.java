@@ -6,16 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -53,6 +48,17 @@ public class SecurityConfig {
                                 "/admin/dashboard/get",
                                 "/admin/users/get",
                                 "/admin/ledgers/get",
+                                "/admin/wallets/salesmen",
+                                "/admin/activity",
+                                "/admin/sessions",
+                                "/admin/analytics/get",
+                                "/tracking/live",
+                                "/notification/broadcast",
+                                "/notification/scheduled",
+                                "/notification/scheduled/**",
+                                "/inventory/branch/*",
+                                "/inventory/set",
+                                "/crate/summary",
                                 "/product/get/*",
                                 "/product/getall",
                                 "/product/producttype/getall").permitAll()
@@ -101,11 +107,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 1. Allow origins. Adding "null" is critical for file:/// testing
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5500", "http://127.0.0.1:5500", "null"));
-
-        // 2. Alternatively, use this for development to allow everything:
-        // configuration.addAllowedOriginPattern("*");
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "null"));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 

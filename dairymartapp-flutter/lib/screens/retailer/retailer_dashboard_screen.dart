@@ -5,7 +5,9 @@ import '../../services/session_manager.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
+import '../../widgets/notification_bell.dart';
 import '../../widgets/retailer_bottom_nav.dart';
 import '../../widgets/stat_card.dart';
 import '../auth/login_screen.dart';
@@ -74,8 +76,8 @@ class _RetailerDashboardScreenState extends State<RetailerDashboardScreen> {
           _firstName = user.firstName;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load dashboard.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -113,6 +115,7 @@ class _RetailerDashboardScreenState extends State<RetailerDashboardScreen> {
       appBar: AppBar(
         title: const Text('Dairy Mart'),
         actions: [
+          const NotificationBell(),
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () => Navigator.push(

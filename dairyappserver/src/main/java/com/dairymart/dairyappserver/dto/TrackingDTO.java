@@ -38,7 +38,11 @@ public class TrackingDTO {
         this.trackId = dao.getTrackId();
         this.isActive = dao.getActive();
         if(dao.getUser() != null) {
-            this.user = new UserDTO(dao.getUser());
+            try {
+                this.user = new UserDTO(dao.getUser());
+            } catch (Exception ignored) {
+                this.user = null;
+            }
         }
         this.userId = dao.getUserId();
         this.latitude = dao.getLatitude();

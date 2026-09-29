@@ -10,7 +10,9 @@ import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
+import '../../widgets/notification_bell.dart';
 import '../../widgets/stat_card.dart';
 import '../auth/login_screen.dart';
 import 'salesman_activity_orders_screen.dart';
@@ -103,8 +105,8 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
           _vehicle = vehicle;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load dashboard.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -150,6 +152,7 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
             onPressed: () => Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const TrackingScreen())),
           ),
+          const NotificationBell(),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',

@@ -3,6 +3,7 @@ import '../../services/dashboard_service.dart';
 import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
 
 class RetailerLedgerScreen extends StatefulWidget {
@@ -34,8 +35,8 @@ class _RetailerLedgerScreenState extends State<RetailerLedgerScreen> {
       final stats =
           await DashboardService.instance.getRetailerDashboard(session.userId);
       if (mounted) setState(() => _stats = stats);
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load ledger.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

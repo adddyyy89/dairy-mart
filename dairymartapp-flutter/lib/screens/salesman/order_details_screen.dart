@@ -91,6 +91,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           '${order.orderDate.day.toString().padLeft(2, '0')}/${order.orderDate.month.toString().padLeft(2, '0')}/${order.orderDate.year}',
                           style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
+                        if (order.hasStockShortfall) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Branch stock is short. Confirm, dispatch, and delivery are blocked until inventory is updated.',
+                            style: TextStyle(color: AppColors.danger, fontSize: 13),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -99,7 +106,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 Text('Items (${_items.length})',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                ..._items.map((item) => _LineItemCard(item: item)),
+                ..._items.map((item) {
+                  InventoryLine? stock;
+                  for (final line in order.inventory) {
+                    if (line.productCode.toUpperCase() ==
+                        item.productCode.trim().toUpperCase()) {
+                      stock = line;
+                      break;
+                    }
+                  }
+                  return _LineItemCard(item: item, stock: stock);
+                }),
                 const SizedBox(height: 8),
                 Card(
                   color: AppColors.primaryLight,
@@ -129,7 +146,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
 class _LineItemCard extends StatelessWidget {
   final OrderLineItem item;
-  const _LineItemCard({required this.item});
+  final InventoryLine? stock;
+  const _LineItemCard({required this.item, this.stock});
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +176,13 @@ class _LineItemCard extends StatelessWidget {
             // so concatenating them here just duplicated the value whenever
             // unit happened to be numeric (e.g. "10 10").
             _DetailRow(label: 'Quantity', value: item.quantity),
+            if (stock != null)
+              _DetailRow(
+                label: 'Branch stock',
+                value: stock!.shortfall > 0
+                    ? '${stock!.available} (short ${stock!.shortfall})'
+                    : '${stock!.available}',
+              ),
             _DetailRow(label: 'Unit', value: item.unit),
             _DetailRow(label: 'Sale Rate', value: formatCurrency(item.saleRate)),
             _DetailRow(label: 'Last Updated', value: lastUpdatedLabel),

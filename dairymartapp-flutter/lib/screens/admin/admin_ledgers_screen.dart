@@ -3,9 +3,11 @@ import '../../models/ledger.dart';
 import '../../services/api_client.dart';
 import '../../services/api_config.dart';
 import '../../services/ledger_service.dart';
+import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/json_unwrap.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
 
 class AdminLedgersScreen extends StatefulWidget {
@@ -45,8 +47,8 @@ class _AdminLedgersScreenState extends State<AdminLedgersScreen> {
           _debit = asMap(map['debitmap']);
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load ledgers.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -77,7 +79,7 @@ class _AdminLedgersScreenState extends State<AdminLedgersScreen> {
                           subtitle: Text(
                               'Credit ${formatCurrency(credit)}  ·  Debit ${formatCurrency(debit)}'),
                           trailing: const Icon(Icons.chevron_right),
-                          onTap: () => Navigator.push(
+                            onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) =>
@@ -95,7 +97,12 @@ class _AdminLedgersScreenState extends State<AdminLedgersScreen> {
 
 class LedgerDetailScreen extends StatefulWidget {
   final int ledgerId;
-  const LedgerDetailScreen({super.key, required this.ledgerId});
+  final bool canRecordPayment;
+  const LedgerDetailScreen({
+    super.key,
+    required this.ledgerId,
+    this.canRecordPayment = false,
+  });
 
   @override
   State<LedgerDetailScreen> createState() => _LedgerDetailScreenState();
@@ -103,6 +110,7 @@ class LedgerDetailScreen extends StatefulWidget {
 
 class _LedgerDetailScreenState extends State<LedgerDetailScreen> {
   bool _loading = true;
+  bool _saving = false;
   String? _error;
   LedgerDetail? _detail;
 
@@ -128,11 +136,102 @@ class _LedgerDetailScreenState extends State<LedgerDetailScreen> {
     }
   }
 
+  Future<void> _recordPayment() async {
+    final session = SessionManager.instance.current;
+    if (session == null) return;
+    final amountController = TextEditingController();
+    int paymentTypeId = 1;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Record collection'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Retailer paid this amount offline (cash / UPI). It is added to your wallet and reduces the retailer pending balance.',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: amountController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Amount',
+                  prefixText: '₹ ',
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<int>(
+                value: paymentTypeId,
+                decoration: const InputDecoration(labelText: 'Payment mode'),
+                items: const [
+                  DropdownMenuItem(value: 1, child: Text('Cash')),
+                  DropdownMenuItem(value: 2, child: Text('UPI')),
+                ],
+                onChanged: (v) =>
+                    setDialogState(() => paymentTypeId = v ?? 1),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Save')),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true) return;
+    final amount = double.tryParse(amountController.text.trim()) ?? 0;
+    if (amount <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Enter a valid amount.')));
+      }
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await LedgerService.instance.addPayment(
+        ledgerId: widget.ledgerId,
+        amount: amount,
+        isCredit: true,
+        createdBy: session.userId,
+        paymentTypeId: paymentTypeId,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Collection recorded.')));
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(apiErrorMessage(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final detail = _detail;
     return Scaffold(
       appBar: AppBar(title: Text(detail?.retailerName ?? 'Ledger')),
+      floatingActionButton: widget.canRecordPayment && !_loading
+          ? FloatingActionButton.extended(
+              onPressed: _saving ? null : _recordPayment,
+              icon: const Icon(Icons.payments_outlined),
+              label: const Text('Record payment'),
+            )
+          : null,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -140,13 +239,17 @@ class _LedgerDetailScreenState extends State<LedgerDetailScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                     children: [
+                      const Text('Ledger balance',
+                          style: TextStyle(color: AppColors.textSecondary)),
                       Text(formatCurrency(detail?.balance ?? 0),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary)),
+                              color: (detail?.balance ?? 0) < 0
+                                  ? AppColors.danger
+                                  : AppColors.primary)),
                       if ((detail?.retailerAddress ?? '').isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
@@ -162,6 +265,9 @@ class _LedgerDetailScreenState extends State<LedgerDetailScreen> {
                         ...detail!.transactions.map((t) {
                           final color =
                               t.isCredit ? AppColors.success : AppColors.danger;
+                          final label = t.isCredit
+                              ? 'Collection'
+                              : (t.paymentTypeDesc ?? 'Order');
                           return Card(
                             child: ListTile(
                               title: Text(
@@ -170,7 +276,7 @@ class _LedgerDetailScreenState extends State<LedgerDetailScreen> {
                                     color: color, fontWeight: FontWeight.bold),
                               ),
                               subtitle: Text(
-                                  '${t.paymentTypeDesc ?? 'Payment'}  ·  ${t.createdOn.day}/${t.createdOn.month}/${t.createdOn.year}'),
+                                  '$label  ·  ${t.createdOn.day}/${t.createdOn.month}/${t.createdOn.year}'),
                             ),
                           );
                         }),

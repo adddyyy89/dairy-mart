@@ -15,9 +15,42 @@ class CrateService {
   Future<CrateRecord?> getCratesForUser(int userId) async {
     final json = await ApiClient.instance.get(ApiConfig.crateGetByUser(userId));
     final list = asList(json);
-    if (list.isNotEmpty) return CrateRecord.fromJson(asMap(list.first));
-    if (json is Map) return CrateRecord.fromJson(asMap(json));
-    return null;
+    if (list.isEmpty) return null;
+    return CrateRecord.fromJson(asMap(list.first));
+  }
+
+  Future<void> sendToStore({
+    required int salesmanId,
+    required int retailerUserId,
+    required int quantity,
+  }) async {
+    await ApiClient.instance.post(ApiConfig.crateStoreSend, body: {
+      'salesmanId': salesmanId,
+      'retailerUserId': retailerUserId,
+      'quantity': quantity,
+    });
+  }
+
+  Future<void> collectFromStore({
+    required int salesmanId,
+    required int retailerUserId,
+    required int quantity,
+  }) async {
+    await ApiClient.instance.post(ApiConfig.crateStoreReturn, body: {
+      'salesmanId': salesmanId,
+      'retailerUserId': retailerUserId,
+      'quantity': quantity,
+    });
+  }
+
+  Future<void> returnToBranch({
+    required int salesmanId,
+    required int quantity,
+  }) async {
+    await ApiClient.instance.post(ApiConfig.crateBranchReturn, body: {
+      'salesmanId': salesmanId,
+      'quantity': quantity,
+    });
   }
 
   /// GET /crate/assigned/user/{id} returns a bare integer, not a crate list.
@@ -25,10 +58,5 @@ class CrateService {
     final json =
         await ApiClient.instance.get(ApiConfig.crateAssignedToUser(userId));
     return asInt(json);
-  }
-
-  Future<void> updateCrateRecord(CrateRecord record) async {
-    await ApiClient.instance
-        .post(ApiConfig.crateUpdate, body: record.toUpdateJson());
   }
 }

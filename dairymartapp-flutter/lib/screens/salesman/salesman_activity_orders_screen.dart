@@ -4,8 +4,10 @@ import '../../services/order_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/api_error.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/notification_bell.dart';
 import '../../widgets/status_chip.dart';
 import 'salesman_dashboard_screen.dart';
 import 'salesman_crates_screen.dart';
@@ -147,6 +149,19 @@ class _SalesmanActivityOrdersScreenState
 
     if (selected == null) return;
 
+    if ((selected == 2 || selected == 4 || selected == 5) &&
+        order.hasStockShortfall) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Branch stock is short for this order. Update inventory before confirming, dispatching, or delivering.'),
+          ),
+        );
+      }
+      return;
+    }
+
     final statusLabel =
         statusOptions.entries.firstWhere((e) => e.value == selected).key;
 
@@ -168,10 +183,10 @@ class _SalesmanActivityOrdersScreenState
         });
       }
       _loadOrders();
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not update order status.')),
+          SnackBar(content: Text(apiErrorMessage(e))),
         );
       }
     }
@@ -227,8 +242,7 @@ class _SalesmanActivityOrdersScreenState
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold)),
                           ),
-                          const Icon(Icons.notifications_none_rounded,
-                              color: AppColors.primary),
+                          const NotificationBellTinted(),
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -433,6 +447,13 @@ class _OrderCard extends StatelessWidget {
                 '${order.orderDetails.length} items • ${order.totalUnits} units',
                 style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
+              if (order.hasStockShortfall) ...[
+                const SizedBox(height: 4),
+                const Text(
+                  'Branch stock short — confirm / dispatch / deliver blocked',
+                  style: TextStyle(color: AppColors.danger, fontSize: 12),
+                ),
+              ],
               const SizedBox(height: 4),
               Text(
                 formatCurrency(order.totalAmount),

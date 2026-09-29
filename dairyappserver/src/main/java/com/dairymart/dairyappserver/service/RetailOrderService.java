@@ -1,12 +1,9 @@
 package com.dairymart.dairyappserver.service;
 
-import com.dairymart.dairyappserver.controller.RetailOrderController;
 import com.dairymart.dairyappserver.dao.*;
-import com.dairymart.dairyappserver.dto.ProductDTO;
 import com.dairymart.dairyappserver.dto.RetailOrderDTO;
 import com.dairymart.dairyappserver.dto.RetailOrderDetailsDTO;
 import com.dairymart.dairyappserver.repository.OrderStatusRepository;
-import com.dairymart.dairyappserver.repository.ProductRepository;
 import com.dairymart.dairyappserver.repository.RetailOrderDetailsRepository;
 import com.dairymart.dairyappserver.repository.RetailOrderRepository;
 import com.dairymart.dairyappserver.util.DateUtil;
@@ -43,6 +40,15 @@ public class RetailOrderService {
     @Autowired
     private ShopService shopService;
 
+    @Autowired
+    private LedgerService ledgerService;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private BranchInventoryService branchInventoryService;
+
     public List<RetailOrderDao> getAllOrders() {
         return retailOrderRepository.findAll();
     }
@@ -63,10 +69,7 @@ public class RetailOrderService {
 
         // Save Initial Order
         RetailOrderDao savedOrderDao = retailOrderRepository.save(orderDao);
-
-        logger.info("Retail order entry created with order Id: {}", savedOrderDao.getOrderId());
-        logger.info("Proceeding with entries for order details..");
-
+        int lineCount = 0;
         if (order.getOrderDetails() != null) {
             for (RetailOrderDetailsDTO dto : order.getOrderDetails()) {
                 if (dto == null || dto.getProductCode() == null || dto.getProductCode().isBlank()) {
@@ -75,13 +78,17 @@ public class RetailOrderService {
                 dto.setLastUpdated(new Date(System.currentTimeMillis()));
                 dto.setOrderId(savedOrderDao.getOrderId());
                 retailOrderDetailsRepository.save(new RetailOrderDetailsDao(dto));
-                logger.info("Added new entry for order Id: {}, product code: {}", dto.getOrderId(), dto.getProductCode());
+                lineCount++;
             }
         }
-
-        logger.info("Retail order details entry are completed successfully.");
-
-        return findById(savedOrderDao.getOrderId());
+        logger.info("Created order {} with {} line(s)", savedOrderDao.getOrderId(), lineCount);
+        RetailOrderDao created = findById(savedOrderDao.getOrderId());
+        try {
+            notificationService.notifyOrderCreated(created);
+        } catch (Exception ex) {
+            logger.error("Failed to send new-order notification for order {}", savedOrderDao.getOrderId(), ex);
+        }
+        return created;
     }
 
     @Transactional
@@ -89,29 +96,26 @@ public class RetailOrderService {
 
         Optional<RetailOrderDao> actualRetailOrderOpt = retailOrderRepository.findById(order.getOrderId());
         RetailOrderDao orderDao = actualRetailOrderOpt.get();
+        int previousStatusId = orderDao.getOrderStatusId();
 
         orderDao.setLastUpdated(new Date(System.currentTimeMillis()));
         orderDao.setOrderStatusId(order.getOrderStatusId());
+        branchInventoryService.applyStatusChange(orderDao, previousStatusId, order.getOrderStatusId());
 
 
         // Save Initial Order
         RetailOrderDao savedOrderDao = retailOrderRepository.save(orderDao);
-
-        logger.info("Retail order update entry created with order Id: {}", savedOrderDao.getOrderId());
-        logger.info("Proceeding with entries for order details..");
-
-        // Save order details one at a time
         if(order.getOrderDetails() != null) {
             for(RetailOrderDetailsDTO dto : order.getOrderDetails()) {
                 dto.setLastUpdated(new Date(System.currentTimeMillis()));
                 retailOrderDetailsRepository.save(new RetailOrderDetailsDao(dto));
-                logger.info("Update entry for order Id: {}, product code: {}", dto.getOrderId(), dto.getProductCode());
             }
         }
-
-        logger.info("Retail order details updated successfully.");
-
-        return findById(savedOrderDao.getOrderId());
+        logger.info("Updated order {} status {} -> {}", savedOrderDao.getOrderId(), previousStatusId, order.getOrderStatusId());
+        RetailOrderDao updated = findById(savedOrderDao.getOrderId());
+        maybePostOrderLedger(previousStatusId, order.getOrderStatusId(), updated);
+        notifyStatusIfChanged(updated, previousStatusId, order.getOrderStatusId());
+        return updated;
     }
 
     public RetailOrderDao findById(int id) {
@@ -124,16 +128,45 @@ public class RetailOrderService {
     }
 
 
+    @Transactional
     public RetailOrderDao updateOrderStatus(RetailOrderDTO retailOrderDTO) {
         Optional<RetailOrderDao> dao = retailOrderRepository.findById(retailOrderDTO.getOrderId());
         RetailOrderDao d = null;
         if(dao.isPresent()) {
             RetailOrderDao retailOrderDao = dao.get();
+            int previousStatusId = retailOrderDao.getOrderStatusId();
             retailOrderDao.setLastUpdated(new Date(System.currentTimeMillis()));
             retailOrderDao.setOrderStatusId(retailOrderDTO.getOrderStatusId());
+            branchInventoryService.applyStatusChange(retailOrderDao, previousStatusId, retailOrderDTO.getOrderStatusId());
             d = retailOrderRepository.save(retailOrderDao);
+            RetailOrderDao updated = findById(d.getOrderId());
+            maybePostOrderLedger(previousStatusId, retailOrderDTO.getOrderStatusId(), updated);
+            notifyStatusIfChanged(updated, previousStatusId, retailOrderDTO.getOrderStatusId());
+            return updated;
         }
         return d;
+    }
+
+    private void notifyStatusIfChanged(RetailOrderDao order, int previousStatusId, int newStatusId) {
+        try {
+            notificationService.notifyOrderStatusChanged(order, previousStatusId, newStatusId);
+        } catch (Exception ex) {
+            logger.error("Failed to send status notification for order {}", order != null ? order.getOrderId() : 0, ex);
+        }
+    }
+
+    private void maybePostOrderLedger(int previousStatusId, int newStatusId, RetailOrderDao order) {
+        if (order == null) {
+            return;
+        }
+        if (previousStatusId == 1 && isBillableStatus(newStatusId)) {
+            ledgerService.postOrderCharge(order);
+        }
+    }
+
+    /** NEW=1 is not billed. Rejected/returned/cancelled do not create a receivable. */
+    private boolean isBillableStatus(int statusId) {
+        return statusId == 2 || statusId == 4 || statusId == 5;
     }
 
     public List<RetailOrderDao> getOrdersForRetailers(List<Integer> retailerIds) {
@@ -195,9 +228,20 @@ public class RetailOrderService {
         return null;
     }*/
 
+    /**
+     * Orders placed today, using order date when present and created-on otherwise.
+     * Null dates are skipped so a bad row cannot empty the dashboard.
+     */
     public List<RetailOrderDao> getTodaysOrders() {
-        List<RetailOrderDao> retailerOrdersDaos = retailOrderRepository.findAll().stream().filter(x -> DateUtil.isSameDay(new Timestamp(x.getCreatedon().getTime()))).collect(Collectors.toCollection(ArrayList::new));
-        return retailerOrdersDaos;
+        return retailOrderRepository.findAll().stream()
+                .filter(order -> {
+                    Date day = order.getOrderDate() != null ? order.getOrderDate() : order.getCreatedon();
+                    if (day == null) {
+                        return false;
+                    }
+                    return DateUtil.isSameDay(new Timestamp(day.getTime()));
+                })
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
 }

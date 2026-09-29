@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Dairy Mart | Notifications</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css"
+    integrity="sha256-tXJfXfp6Ewt1ilPzLDtQnJV4hclT9XuaZUKyUvmyr+Q=" crossorigin="anonymous" media="print"
+    onload="this.media='all'" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/styles/overlayscrollbars.min.css"
+    crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    crossorigin="anonymous" />
+  <link rel="stylesheet" href="../css/adminlte.css" />
+  <link rel="stylesheet" href="../css/common.css" />
+  <style>
+    .table-container { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+  </style>
+</head>
+<body class="layout-fixed sidebar-expand-lg sidebar-open bg-body-tertiary">
+  <script src="../js/auth.js"></script>
+  <div class="app-wrapper">
+    <div class="app-header navbar navbar-expand bg-body" id="header-container"></div>
+    <div class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark" id="sidebar-container"></div>
+    <main class="app-main">
+      <div class="app-content-header">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-sm-6">
+              <h3 class="mb-0">Notifications</h3>
+            </div>
+            <div class="col-sm-6">
+              <ol class="breadcrumb float-sm-end">
+                <li class="breadcrumb-item"><a href="../home.html">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Notifications</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="app-content">
+        <div class="container-fluid">
+          <p class="text-secondary">Inbox for this admin account. Send a notice now, or pick a future time.</p>
+          <div id="broadcastAlert" class="mb-3" style="display:none"></div>
+          <div class="card mb-3">
+            <div class="card-body">
+              <h5>Send a notice</h5>
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <label class="form-label">Type</label>
+                  <select class="form-select" id="broadcastKind">
+                    <option value="ANNOUNCEMENT">Announcement</option>
+                    <option value="HOLIDAY">Public holiday</option>
+                    <option value="CLOSURE">Shop closure</option>
+                    <option value="SALE">Sale / discount</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Send to</label>
+                  <select class="form-select" id="broadcastAudience">
+                    <option value="ALL">Everyone</option>
+                    <option value="SALESMEN">Salesmen</option>
+                    <option value="RETAILERS">Stores / retailers</option>
+                    <option value="ADMINS">Admins only</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Title</label>
+                  <input type="text" class="form-control" id="broadcastTitle" maxlength="120" placeholder="Closed on Friday">
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Message</label>
+                  <textarea class="form-control" id="broadcastMessage" rows="3" maxlength="250" placeholder="Details for the team and stores"></textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Send later (optional)</label>
+                  <input type="datetime-local" class="form-control" id="broadcastWhen">
+                  <div class="form-text">Leave empty to send now. The server releases scheduled notices about every 30 seconds.</div>
+                </div>
+                <div class="col-12">
+                  <button type="button" class="btn btn-primary" onclick="sendBroadcast()">Send or schedule</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title">Scheduled notices</h3></div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-dark">
+                    <tr>
+                      <th>Title</th>
+                      <th>When</th>
+                      <th>Audience</th>
+                      <th>Status</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="scheduled-table"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="table-container bg-white">
+            <table class="table table-hover mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>Type</th>
+                  <th>Message</th>
+                  <th>When</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="notifications-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+    <div class="app-footer" id="footer-container"></div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script src="../js/adminlte.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/notifications.js"></script>
+  <script src="../components/header.js"></script>
+  <script src="../components/sidebar.js"></script>
+  <script src="../components/footer.js"></script>
+  <script src="../js/masterLayout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      loadLayout({basePath: '../'});
+    });
+  </script>
+</body>
+</html>

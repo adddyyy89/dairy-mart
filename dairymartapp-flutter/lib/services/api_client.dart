@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import '../utils/json_unwrap.dart';
 import 'api_config.dart';
 import 'session_manager.dart';
+
+const String kServerDownMessage = 'The server is down. Please try again later.';
 
 class ApiException implements Exception {
   final int? statusCode;
@@ -16,11 +19,6 @@ class ApiException implements Exception {
 
 /// Every screen's service class goes through here so auth headers, base URL,
 /// timeouts, and error handling stay in exactly one place.
-///
-/// Every request/response is logged via debugPrint - visible in the VS Code
-/// "Debug Console" (or the `flutter run` terminal) while the app is running
-/// in debug mode. Logs are stripped automatically in release builds since
-/// debugPrint is a no-op there.
 class ApiClient {
   ApiClient._();
   static final ApiClient instance = ApiClient._();
@@ -43,21 +41,21 @@ class ApiClient {
   Future<dynamic> get(String path, {Map<String, String>? query}) async {
     final uri = _uri(path, query);
     final headers = _headers();
-    _logRequest('GET', uri, headers, null);
+    _logRequest('GET', uri, null);
     try {
       final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
       _logResponse('GET', uri, res);
       return _decode(res);
     } catch (e) {
       _logError('GET', uri, e);
-      rethrow;
+      throw _asApiException(e);
     }
   }
 
   Future<dynamic> post(String path, {Object? body}) async {
     final uri = _uri(path);
     final headers = _headers();
-    _logRequest('POST', uri, headers, body);
+    _logRequest('POST', uri, body);
     try {
       final res = await http
           .post(uri, headers: headers, body: jsonEncode(body))
@@ -66,7 +64,7 @@ class ApiClient {
       return _decode(res);
     } catch (e) {
       _logError('POST', uri, e);
-      rethrow;
+      throw _asApiException(e);
     }
   }
 
@@ -85,7 +83,7 @@ class ApiClient {
       'Content-Type': 'application/json',
       'Authorization': 'Basic $credentials',
     };
-    _logRequest('POST', uri, headers, body);
+    _logRequest('POST', uri, body);
     try {
       final res = await http
           .post(uri, headers: headers, body: jsonEncode(body))
@@ -94,57 +92,97 @@ class ApiClient {
       return _decode(res);
     } catch (e) {
       _logError('POST', uri, e);
-      rethrow;
+      throw _asApiException(e);
     }
   }
 
   dynamic _decode(http.Response res) {
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      if (res.body.isEmpty) return null;
-      final trimmed = res.body.trim();
-      if (trimmed.isEmpty) return null;
-      try {
-        return unwrapJson(jsonDecode(trimmed));
-      } catch (_) {
-        return int.tryParse(trimmed) ?? trimmed;
-      }
-    }
-    String message = 'Request failed (${res.statusCode})';
+    final trimmed = res.body.trim();
+    dynamic parsed;
     try {
-      final parsed = jsonDecode(res.body);
-      if (parsed is Map && parsed['message'] != null) {
-        message = parsed['message'];
+      if (trimmed.isNotEmpty) {
+        parsed = unwrapJson(jsonDecode(trimmed));
       }
     } catch (_) {
-      // response wasn't JSON - keep the generic message
+      parsed = trimmed.isEmpty ? null : trimmed;
     }
-    throw ApiException(message, statusCode: res.statusCode);
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      if (parsed == null && trimmed.isEmpty) return null;
+      if (parsed == null) return int.tryParse(trimmed) ?? trimmed;
+      return parsed;
+    }
+
+    throw ApiException(
+      _errorText(res.statusCode, parsed, trimmed),
+      statusCode: res.statusCode,
+    );
   }
 
-  // ---- Logging helpers -----------------------------------------------
-
-  void _logRequest(String method, Uri uri, Map<String, String> headers, Object? body) {
-    debugPrint('┌── API REQUEST ────────────────────────────');
-    debugPrint('│ $method $uri');
-    debugPrint('│ Auth: ${headers['Authorization'] ?? '(none)'}');
-    if (body != null) {
-      _logMultiline('│ Body: ', _tryEncode(body));
+  String _errorText(int status, dynamic parsed, String raw) {
+    final fromBody = _messageFromBody(parsed, raw);
+    if (fromBody != null && fromBody.isNotEmpty) {
+      return fromBody;
     }
-    debugPrint('└───────────────────────────────────────────');
+    if (status == 400) {
+      return 'That request was not valid. Check the details and try again.';
+    }
+    if (status == 401) {
+      return 'Your session expired. Please sign in again.';
+    }
+    if (status == 403) {
+      return 'You are not allowed to do this.';
+    }
+    if (status == 404) {
+      return 'That record was not found.';
+    }
+    if (status >= 500) {
+      return kServerDownMessage;
+    }
+    return 'Request failed ($status)';
+  }
+
+  String? _messageFromBody(dynamic parsed, String raw) {
+    if (parsed is String) {
+      final text = parsed.trim();
+      if (text.isEmpty || text.startsWith('<')) return null;
+      return text;
+    }
+    if (parsed is Map) {
+      for (final key in ['message', 'error', 'errorMessage', 'detail']) {
+        final value = parsed[key];
+        if (value is String && value.trim().isNotEmpty) {
+          return value.trim();
+        }
+      }
+    }
+    if (raw.isNotEmpty &&
+        !raw.startsWith('<') &&
+        !raw.startsWith('{') &&
+        !raw.startsWith('[')) {
+      return raw;
+    }
+    return null;
+  }
+
+  ApiException _asApiException(Object error) {
+    if (error is ApiException) return error;
+    return ApiException(kServerDownMessage);
+  }
+
+  void _logRequest(String method, Uri uri, Object? body) {
+    debugPrint('[API] $method $uri');
+    if (body != null) {
+      debugPrint('[API] body ${_tryEncode(body)}');
+    }
   }
 
   void _logResponse(String method, Uri uri, http.Response res) {
-    debugPrint('┌── API RESPONSE ───────────────────────────');
-    debugPrint('│ $method $uri -> ${res.statusCode}');
-    _logMultiline('│ Body: ', res.body);
-    debugPrint('└───────────────────────────────────────────');
+    debugPrint('[API] $method $uri -> ${res.statusCode} (${res.body.length} bytes)');
   }
 
   void _logError(String method, Uri uri, Object error) {
-    debugPrint('┌── API ERROR ──────────────────────────────');
-    debugPrint('│ $method $uri');
-    debugPrint('│ $error');
-    debugPrint('└───────────────────────────────────────────');
+    debugPrint('[API] ERROR $method $uri :: $error');
   }
 
   String _tryEncode(Object? body) {
@@ -152,22 +190,6 @@ class ApiClient {
       return jsonEncode(body);
     } catch (_) {
       return body.toString();
-    }
-  }
-
-  /// debugPrint / adb logcat truncate very long single lines - this splits
-  /// long request/response bodies into ~800-char chunks so nothing gets cut
-  /// off when reading logs in the VS Code Debug Console or `flutter run`
-  /// terminal.
-  void _logMultiline(String prefix, String content) {
-    const chunkSize = 800;
-    if (content.length <= chunkSize) {
-      debugPrint('$prefix$content');
-      return;
-    }
-    for (var i = 0; i < content.length; i += chunkSize) {
-      final end = (i + chunkSize < content.length) ? i + chunkSize : content.length;
-      debugPrint('$prefix${content.substring(i, end)}');
     }
   }
 }

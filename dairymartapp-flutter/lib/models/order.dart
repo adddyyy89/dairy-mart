@@ -1,5 +1,29 @@
 import '../utils/json_unwrap.dart';
 
+class InventoryLine {
+  final String productCode;
+  final String productName;
+  final int ordered;
+  final int available;
+  final int shortfall;
+
+  InventoryLine({
+    required this.productCode,
+    required this.productName,
+    required this.ordered,
+    required this.available,
+    required this.shortfall,
+  });
+
+  factory InventoryLine.fromJson(Map<String, dynamic> json) => InventoryLine(
+        productCode: json['productCode']?.toString() ?? '',
+        productName: json['productName']?.toString() ?? '',
+        ordered: asInt(json['ordered']),
+        available: asInt(json['available']),
+        shortfall: asInt(json['shortfall']),
+      );
+}
+
 /// Maps to RetailOrderDetailsDTO
 class OrderLineItem {
   final String productCode;
@@ -93,6 +117,7 @@ class RetailOrder {
   final int orderStatusId;
   final String statusDescription;
   final List<OrderLineItem> orderDetails;
+  final List<InventoryLine> inventory;
 
   RetailOrder({
     required this.orderId,
@@ -104,6 +129,7 @@ class RetailOrder {
     required this.orderStatusId,
     required this.statusDescription,
     required this.orderDetails,
+    this.inventory = const [],
   });
 
   double get totalAmount =>
@@ -112,10 +138,14 @@ class RetailOrder {
   int get totalUnits => orderDetails.fold(
       0, (sum, item) => sum + (double.tryParse(item.quantity) ?? 0).round());
 
+  bool get hasStockShortfall =>
+      inventory.any((line) => line.shortfall > 0);
+
   factory RetailOrder.fromJson(Map<String, dynamic> json) {
     final retailer = asMap(json['retailer']);
     final status = asMap(json['status']);
     final details = asList(json['orderDetails']);
+    final stock = asList(json['inventory']);
 
     return RetailOrder(
       orderId: json['orderId'] ?? 0,
@@ -131,6 +161,7 @@ class RetailOrder {
           : 'NEW',
       orderDetails:
           details.map((d) => OrderLineItem.fromJson(asMap(d))).toList(growable: false),
+      inventory: stock.map((d) => InventoryLine.fromJson(asMap(d))).toList(),
     );
   }
 
@@ -188,5 +219,6 @@ class RetailOrder {
         orderStatusId: statusId,
         statusDescription: statusDescription,
         orderDetails: orderDetails,
+        inventory: inventory,
       );
 }

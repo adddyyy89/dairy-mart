@@ -3,6 +3,7 @@ import '../../services/ledger_service.dart';
 import '../../services/session_manager.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/load_error.dart';
 import '../admin/admin_ledgers_screen.dart';
@@ -43,8 +44,8 @@ class _SalesmanLedgerDashboardScreenState
       final dashboard =
           await LedgerService.instance.getSalesmanDashboard(session.userId);
       if (mounted) setState(() => _dashboard = dashboard);
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load ledger.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -265,7 +266,8 @@ class _RetailersTab extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => LedgerDetailScreen(ledgerId: row.ledgerId),
+                builder: (_) => LedgerDetailScreen(
+                    ledgerId: row.ledgerId, canRecordPayment: true),
               ),
             ),
           ),

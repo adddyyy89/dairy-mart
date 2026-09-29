@@ -9,6 +9,9 @@ import com.dairymart.dairyappserver.service.LoginService;
 import com.dairymart.dairyappserver.service.TwilioService;
 import com.dairymart.dairyappserver.service.UserService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,7 @@ import java.sql.Timestamp;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Auth", description = "Login, logout, and password reset. Login does not use HTTP Basic.")
 public class LoginController {
 
     @Autowired
@@ -32,48 +36,52 @@ public class LoginController {
     Logger logger = LoggerFactory.getLogger(LoginController.class);
     private static final Gson gson = new Gson();
 
+    @Operation(summary = "Authenticate with phone and password (no Basic auth)")
+    @SecurityRequirements
     @CrossOrigin("*")
     @PostMapping(value="/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> login(@RequestBody UserLoginDTO dto) {
-        logger.info("login called using phone: " + dto.getPhoneNumber());
-        if (dto == null || dto.getPassword() == null && dto.getPassword().isEmpty()) {
+        logger.info("login called using phone: {}", dto == null ? null : dto.getPhoneNumber());
+        if (dto == null || dto.getPhoneNumber() == null || dto.getPhoneNumber().isBlank()
+                || dto.getPassword() == null || dto.getPassword().isEmpty()) {
             logger.warn("Login details not provided correctly.");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password.");
         }
 
-        logger.info("Checking role of phoneNumber: " + dto.getPhoneNumber());
-
-        // Set other details
-        dto.setRole(userSvc.findRoleByPhone(dto.getPhoneNumber()));
-        logger.info("Role found : " + dto.getRole());
-
-        dto.setIsActive(true);
-        dto.setLoggedIn(new Timestamp(System.currentTimeMillis()));
-
-        // get userid of the phone number
-        UserDao dao = userSvc.findByPhone(dto.getPhoneNumber());
-        dto.setUserId(dao.getUserId());
-
-        // check if already logged in
-        UserLoginDao loggedInDao = loginSvc.isLoggedIn(new UserLoginDao(dto));
-        if(loggedInDao != null) {
-            logger.error("User tried to login using phone: {} but is already logged in!!", dto.getPhoneNumber());
-            UserLoginDTO userLoginDTO = new UserLoginDTO(loggedInDao);
-            userLoginDTO.setPassword(dao.getPassword().replaceAll("\\{noop}", ""));
-            return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(userLoginDTO));
-
+        UserDao user = loginSvc.authenticate(dto.getPhoneNumber().trim(), dto.getPassword());
+        if (user == null) {
+            logger.warn("No matching user/password for phone {}", dto.getPhoneNumber());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password.");
         }
 
-        // Create entry of login
-        UserLoginDao loginDao = loginSvc.login(new UserLoginDao(dto));
-        logger.info("Login successful for phoneNumber: {}", dto.getPhoneNumber());
+        int role = user.getTypeId();
+        if (role <= 0 && user.getType() != null) {
+            role = user.getType().getUserTypeId();
+        }
+        logger.info("Login userId={} role={} phone={}", user.getUserId(), role, user.getPhoneNumber());
 
-        UserLoginDTO userLoginDTO = new UserLoginDTO(loginDao);
-        userLoginDTO.setPassword(dao.getPassword().replaceAll("\\{noop}", ""));
+        loginSvc.endActiveSessions(user.getPhoneNumber(), user.getUserId());
+
+        UserLoginDao session = new UserLoginDao();
+        session.setPhoneNumber(user.getPhoneNumber());
+        session.setUserId(user.getUserId());
+        session.setRole(role);
+        session.setActive(true);
+        session.setLoggedIn(new Timestamp(System.currentTimeMillis()));
+        UserLoginDao saved = loginSvc.login(session);
+
+        UserLoginDTO userLoginDTO = new UserLoginDTO(saved);
+        userLoginDTO.setUserId(user.getUserId());
+        userLoginDTO.setRole(role);
+        userLoginDTO.setIsActive(true);
+        userLoginDTO.setPhoneNumber(user.getPhoneNumber());
+        String stored = user.getPassword() == null ? "" : user.getPassword().replace("{noop}", "");
+        userLoginDTO.setPassword(stored);
+        logger.info("Login successful for phoneNumber: {}", user.getPhoneNumber());
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(userLoginDTO));
-
     }
 
+    @Operation(summary = "End the active session for a phone number")
     @CrossOrigin("*")
     @PostMapping(value = "/logout", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> logout(@RequestBody UserLoginDTO dto) {
@@ -111,6 +119,7 @@ public class LoginController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(gson.toJson("There is no entry of login for requested details!"));
     }
 
+    @Operation(summary = "Reset password for a phone number")
     @PostMapping(value = "/reset", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> resetPassword(@RequestBody UserLoginResetDTO dto) {
         logger.info("Password reset api called.");

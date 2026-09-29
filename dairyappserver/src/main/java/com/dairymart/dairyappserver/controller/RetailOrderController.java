@@ -5,7 +5,10 @@ import com.dairymart.dairyappserver.dto.ProductDTO;
 import com.dairymart.dairyappserver.dto.RetailOrderDTO;
 import com.dairymart.dairyappserver.dto.SalesmanToRetailDTO;
 import com.dairymart.dairyappserver.service.*;
+import com.dairymart.dairyappserver.util.ApiMessages;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/retailorder")
+@Tag(name = "Retail orders", description = "Place, list, and update order status. Stock is deducted when an order first reaches confirmed, dispatched, or delivered.")
 public class RetailOrderController {
 
     Logger logger = LoggerFactory.getLogger(RetailOrderController.class);
@@ -38,6 +42,10 @@ public class RetailOrderController {
     @Autowired
     private ShopService shopService;
 
+    @Autowired
+    private BranchInventoryService branchInventoryService;
+
+    @Operation(summary = "Products available to order (with branch stock where applicable)")
     @GetMapping(value = "/get/all/products", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getAllProducts() {
         logger.info("Get all products called.");
@@ -52,6 +60,7 @@ public class RetailOrderController {
     }
 
     @CrossOrigin("*")
+    @Operation(summary = "All orders")
     @GetMapping(value = "/get/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getAllRetailOrders() {
         logger.info("Get all retail orders called.");
@@ -59,12 +68,13 @@ public class RetailOrderController {
         logger.info("Fetched total records: {}", daoList.size());
         List<RetailOrderDTO> dtoList = new ArrayList<>();
         for(RetailOrderDao dao : daoList) {
-            dtoList.add(new RetailOrderDTO(dao));
+            dtoList.add(toDto(dao));
         }
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(dtoList));
     }
 
     @CrossOrigin("*")
+    @Operation(summary = "One order by id")
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getRetailOrderByOrderId(@PathVariable String id) {
         logger.info("Get order details for order id = " + id);
@@ -84,13 +94,14 @@ public class RetailOrderController {
 
         else {
             logger.info("Order found!!");
-            return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new RetailOrderDTO(orderDao)));
+            return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(toDto(orderDao)));
         }
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Order not found");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiMessages.of("Order not found"));
 
     }
 
+    @Operation(summary = "Create a new order")
     @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> addRetailOrder(@RequestBody RetailOrderDTO retailOrder) {
         logger.info("add retail order called. Order = {}", retailOrder);
@@ -120,6 +131,7 @@ public class RetailOrderController {
      * @param id
      * @return
      */
+    @Operation(summary = "Orders assigned to a salesman")
     @GetMapping(value = "/get/salesman/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getOrdersBySalesmanId(@PathVariable String id) {
         logger.info("Get orders for salesman id : {} called.", id);
@@ -128,17 +140,18 @@ public class RetailOrderController {
             salesmanId = Integer.parseInt(id);
         } catch(NumberFormatException ex){
             logger.error("Invalid salesman id provided.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(gson.toJson("Invalid salesman id provided."));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiMessages.of("Invalid salesman id provided."));
         }
         List<RetailOrderDao> retailOrderDaos = retailOrderService.getOrdersForSalesman(salesmanId);
         List<RetailOrderDTO> retailOrderDTOS = new ArrayList<>();
         for(RetailOrderDao d : retailOrderDaos) {
-            retailOrderDTOS.add(new RetailOrderDTO(d));
+            retailOrderDTOS.add(toDto(d));
         }
         logger.info("Fetched orders for salesman : {}, Total Orders: {}", id, retailOrderDTOS.size());
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(retailOrderDTOS));
     }
 
+    @Operation(summary = "Orders for a retailer shop")
     @GetMapping(value = "/get/retailer/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getOrdersByRetailerId(@PathVariable String id) {
         logger.info("Get orders for user id : {} called.", id);
@@ -152,22 +165,32 @@ public class RetailOrderController {
         List<RetailOrderDao> retailOrderDaos = retailOrderService.getOrdersForRetailers(retailerIdList);
         List<RetailOrderDTO> retailOrderDTOS = new ArrayList<>();
         for(RetailOrderDao d : retailOrderDaos) {
-            retailOrderDTOS.add(new RetailOrderDTO(d));
+            retailOrderDTOS.add(toDto(d));
         }
         logger.info("Fetched orders for retailer : {}, Total Orders: {}", id, retailOrderDTOS.size());
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(retailOrderDTOS));
     }
 
+    @Operation(summary = "Update order status. Confirm/dispatch/deliver fail with 400 if branch stock is short.")
     @PostMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> updateRetailOrder(@RequestBody RetailOrderDTO retailOrder) {
         logger.info("update retail order called. Order = {}", retailOrder);
-
-        RetailOrderDao retailOrderDao = retailOrderService.updateOrder(retailOrder);
-
-        logger.info("update retail order call is completed successfully.");
-
-        return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(new RetailOrderDTO(retailOrderDao)));
-
+        try {
+            RetailOrderDao retailOrderDao = retailOrderService.updateOrder(retailOrder);
+            logger.info("update retail order call is completed successfully.");
+            return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(toDto(retailOrderDao)));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiMessages.of(ex.getMessage()));
+        }
     }
 
+    private RetailOrderDTO toDto(RetailOrderDao dao) {
+        RetailOrderDTO dto = new RetailOrderDTO(dao);
+        try {
+            dto.setInventory(branchInventoryService.availabilityForOrder(dao));
+        } catch (Exception ex) {
+            logger.warn("Could not attach inventory for order {}", dao.getOrderId(), ex);
+        }
+        return dto;
+    }
 }

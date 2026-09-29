@@ -4,8 +4,11 @@ import '../../services/api_config.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/json_unwrap.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
+import '../../widgets/notification_bell.dart';
 import '../../widgets/stat_card.dart';
+import '../notifications_screen.dart';
 import '../auth/login_screen.dart';
 import '../../services/session_manager.dart';
 import 'admin_ledgers_screen.dart';
@@ -53,8 +56,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     try {
       final json = await ApiClient.instance.get(ApiConfig.adminDashboard);
       if (mounted) setState(() => _summary = asMap(json));
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load admin dashboard.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -77,6 +80,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       appBar: AppBar(
         title: const Text('Admin'),
         actions: [
+          const NotificationBell(),
           IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
@@ -115,6 +119,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   const Text('Manage',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.notifications_outlined, color: AppColors.primary),
+                      title: const Text('Notifications'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+                    ),
+                  ),
                   Card(
                     child: ListTile(
                       leading: const Icon(Icons.people_outline, color: AppColors.primary),

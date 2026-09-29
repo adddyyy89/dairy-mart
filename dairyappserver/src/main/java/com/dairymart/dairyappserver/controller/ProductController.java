@@ -10,6 +10,7 @@ import com.dairymart.dairyappserver.service.ProductService;
 import com.dairymart.dairyappserver.service.ProductTypeService;
 import com.dairymart.dairyappserver.service.UserService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import java.util.List;
 @CrossOrigin("*")
 @RestController
 @RequestMapping("/product")
+@Tag(name = "Products", description = "Product catalog and types")
 public class ProductController {
 
     Logger logger = LoggerFactory.getLogger(ProductController.class);
@@ -80,7 +82,7 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unable to get the product using id = " + productId);
         }
 
-        logger.info("Product details fetched. {}", productDTO);
+        logger.info("Product details fetched for productId={}", productId);
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(productDTO));
     }
 

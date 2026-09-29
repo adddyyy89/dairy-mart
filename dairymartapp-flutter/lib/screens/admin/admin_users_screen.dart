@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/load_error.dart';
 import '../salesman/tracking_screen.dart';
 
@@ -32,8 +33,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     try {
       final users = await UserService.instance.getAllUsers();
       if (mounted) setState(() => _users = users);
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load users.');
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

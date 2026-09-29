@@ -2,7 +2,6 @@ package com.dairymart.dairyappserver.dao;
 
 import com.dairymart.dairyappserver.dto.ShopDTO;
 import jakarta.persistence.*;
-import org.apache.catalina.User;
 
 import java.sql.Date;
 
