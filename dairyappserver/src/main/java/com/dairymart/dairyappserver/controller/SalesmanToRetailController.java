@@ -9,6 +9,7 @@ import com.dairymart.dairyappserver.service.SalesmanToRetailService;
 import com.dairymart.dairyappserver.service.ShopService;
 import com.dairymart.dairyappserver.service.UserService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +22,10 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/salesmantoretail")
+@Tag(name = "Salesman to retail", description = "Which salesman covers which store")
 public class SalesmanToRetailController {
 
     Logger logger = LoggerFactory.getLogger(SalesmanToRetailController.class);

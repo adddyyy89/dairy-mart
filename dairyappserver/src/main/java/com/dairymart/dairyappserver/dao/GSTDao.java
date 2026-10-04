@@ -9,7 +9,6 @@ public class GSTDao {
 
     @Id
     @Column(name = "gstid")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int gstId;
 
     @Column(name = "gstnumber")
@@ -22,7 +21,9 @@ public class GSTDao {
     private String panNumber;
 
     public GSTDao(GSTDTO gst) {
-        this.gstId = gst.getGstId();
+        if (gst.getGstId() > 0) {
+            this.gstId = gst.getGstId();
+        }
         this.gstNumber = gst.getGstNumber();
         this.aadharNumber = gst.getAadharNumber();
         this.panNumber = gst.getPanNumber();

@@ -4,8 +4,8 @@ import com.dairymart.dairyappserver.dao.UserAddressDao;
 import com.dairymart.dairyappserver.dao.UserDao;
 import com.dairymart.dairyappserver.dto.UserDTO;
 import com.dairymart.dairyappserver.repository.UserRepository;
-import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.sql.Date;
@@ -23,16 +23,28 @@ public class UserService {
     @Autowired
     private UserAddressService userAddressService;
 
+    @Autowired
+    @Lazy
+    private NotificationService notificationService;
+
 
     public List<UserDao> getAllUsers() {
         return userRepository.findAll();
     }
 
     public UserDao createUser(UserDao user) {
+        user.setPassword(storedPassword(user.getPassword()));
         UserAddressDao addressDao = userAddressService.addNewAddress(user.getAddress());
         if(addressDao != null) {
             user.setAddressId(addressDao.getAddressId());
-            return userRepository.save(user);
+            UserDao saved = userRepository.save(user);
+            if (notificationService != null && saved != null) {
+                notificationService.recordActivity("USER", "New user",
+                        NotificationService.personName(saved) + " (" + saved.getPhoneNumber() + ") added as "
+                                + NotificationService.roleLabel(saved.getTypeId()) + ".",
+                        saved.getUserId(), saved.getUserId());
+            }
+            return saved;
         }
         return null;
     }
@@ -47,15 +59,28 @@ public class UserService {
     }
 
     public int findRoleByPhone(String phoneNumber) {
-        String pNumber = phoneNumber;
-        List<UserDao> dao = userRepository.findAll().stream().filter(x -> x.getPhoneNumber().equalsIgnoreCase(pNumber)).collect(Collectors.toCollection(ArrayList::new));
-        return dao.get(0).getTypeId();
+        UserDao user = findByPhone(phoneNumber);
+        if (user == null) {
+            return 0;
+        }
+        if (user.getTypeId() > 0) {
+            return user.getTypeId();
+        }
+        if (user.getType() != null) {
+            return user.getType().getUserTypeId();
+        }
+        return 0;
     }
 
     public UserDao findByPhone(String phoneNumber) {
-        String pNumber = phoneNumber;
-        List<UserDao> dao = userRepository.findAll().stream().filter(x -> x.getPhoneNumber().equalsIgnoreCase(pNumber)).collect(Collectors.toCollection(ArrayList::new));
-        return dao.get(0);
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            return null;
+        }
+        String pNumber = phoneNumber.trim();
+        List<UserDao> dao = userRepository.findAll().stream()
+                .filter(x -> x.getPhoneNumber() != null && x.getPhoneNumber().equalsIgnoreCase(pNumber))
+                .collect(Collectors.toCollection(ArrayList::new));
+        return dao.isEmpty() ? null : dao.get(0);
     }
 
     public List<UserDao> findByTypeId(int typeId) {
@@ -64,19 +89,53 @@ public class UserService {
     }
 
     public UserDao updateById(UserDTO dto) {
-
-        int userId = dto.getUserId();
-        UserDao d = findById(userId);
-        if(d == null) {
+        UserDao d = findById(dto.getUserId());
+        if (d == null) {
             return null;
         }
 
-        UserDao dao = new UserDao(dto);
-        dao.setLastUpdated(new Date(System.currentTimeMillis()));
-        dao.setUserId(dto.getUserId());
-        return userRepository.save(dao);
+        if (dto.getFirstName() != null && !dto.getFirstName().isEmpty()) {
+            d.setFirstName(dto.getFirstName());
+        }
+        if (dto.getLastName() != null) {
+            d.setLastName(dto.getLastName());
+        }
+        if (dto.getEmailId() != null && !dto.getEmailId().isEmpty()) {
+            d.setEmailId(dto.getEmailId());
+        }
+        if (dto.getPhoneNumber() != null && !dto.getPhoneNumber().isEmpty()) {
+            d.setPhoneNumber(dto.getPhoneNumber());
+        }
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            d.setPassword(storedPassword(dto.getPassword()));
+        }
+        if (dto.getUserTypeId() > 0) {
+            d.setTypeId(dto.getUserTypeId());
+        }
+        if (dto.getAddressId() > 0) {
+            d.setAddressId(dto.getAddressId());
+        }
+        if (dto.getActive() != null) {
+            d.setActive(dto.getActive());
+        }
+        d.setLastUpdated(new Date(System.currentTimeMillis()));
+        UserDao saved = userRepository.save(d);
+        if (notificationService != null && saved != null) {
+            notificationService.recordActivity("USER", "Profile updated",
+                    NotificationService.personName(saved) + " (" + saved.getPhoneNumber() + ") profile was updated.",
+                    saved.getUserId(), saved.getUserId());
+        }
+        return saved;
+    }
 
-
+    public static String storedPassword(String password) {
+        if (password == null || password.isEmpty()) {
+            return password;
+        }
+        if (password.startsWith("{")) {
+            return password;
+        }
+        return "{noop}" + password;
     }
 
     public UserDao saveUser(UserDao dao) {

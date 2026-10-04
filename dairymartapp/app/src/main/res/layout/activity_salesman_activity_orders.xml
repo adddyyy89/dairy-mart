@@ -109,9 +109,10 @@
                         android:orientation="vertical"
                         android:padding="20dp">
                         <TextView
+                            android:id="@+id/salesman_order_activity_activeorder"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="14"
+                            android:text="0"
                             android:textColor="#1A73E8"
                             android:textSize="28sp"
                             android:textStyle="bold"/>
@@ -140,9 +141,10 @@
                         android:orientation="vertical"
                         android:padding="20dp">
                         <TextView
+                            android:id="@+id/salesman_order_activity_totalactivecrates"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="168"
+                            android:text="0"
                             android:textColor="#202124"
                             android:textSize="28sp"
                             android:textStyle="bold"/>

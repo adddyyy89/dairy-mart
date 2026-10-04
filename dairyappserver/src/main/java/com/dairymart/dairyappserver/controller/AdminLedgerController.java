@@ -8,6 +8,7 @@ import com.dairymart.dairyappserver.dto.UserDTO;
 import com.dairymart.dairyappserver.service.LedgerService;
 import com.dairymart.dairyappserver.service.UserService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/admin/ledgers")
+@Tag(name = "Admin ledgers", description = "Ledger list and transaction detail for AdminLTE")
 public class AdminLedgerController {
 
     Logger logger = LoggerFactory.getLogger(AdminLedgerController.class);

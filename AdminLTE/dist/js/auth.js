@@ -19,24 +19,71 @@
 //logout function
 
 function logout() {
-    sessionStorage.removeItem('isLoggedIn');
-    sessionStorage.removeItem('user');
-    const basePath = window.APP_BASE_PATH || './';
-
-    window.location.href = basePath + 'index.html';
+    const user = typeof getUser === 'function' ? getUser() : null;
+    const base = typeof dmApiBase === 'function'
+        ? dmApiBase()
+        : (localStorage.getItem('dairymartApiBase') || 'http://localhost:8080');
+    const finish = () => {
+        sessionStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('user');
+        localStorage.removeItem('user');
+        const basePath = window.APP_BASE_PATH || './';
+        window.location.href = basePath + 'index.html';
+    };
+    if (user && user.phoneNumber) {
+        fetch(base + '/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(user.phoneNumber && user.password
+                    ? { Authorization: 'Basic ' + btoa(`${user.phoneNumber}:${user.password}`) }
+                    : {}),
+            },
+            body: JSON.stringify({
+                phoneNumber: user.phoneNumber,
+                userId: user.userId,
+                password: user.password,
+            }),
+        }).catch(() => {}).finally(finish);
+        return;
+    }
+    finish();
 }
 
 window.logout = logout;
 
 //getting userdata
 
-function getUser() {
-    const userData = sessionStorage.getItem('user');
-    if (userData) {
-        return JSON.parse(userData);
-
+function unwrapUserRecord(raw) {
+    if (!raw) return null;
+    let user = raw;
+    if (typeof unwrap === 'function') {
+        user = unwrap(raw);
+    } else if (user.map && typeof user.map === 'object') {
+        user = user.map;
     }
-    return null;
+    return user;
+}
+
+function getUser() {
+    const userData = sessionStorage.getItem('user') || localStorage.getItem('user');
+    if (!userData) return null;
+    try {
+        return unwrapUserRecord(JSON.parse(userData));
+    } catch (_) {
+        return null;
+    }
+}
+
+function sessionUserId() {
+    const user = getUser();
+    if (!user) return null;
+    const raw = user.userId ?? user.userid;
+    if (raw === undefined || raw === null || raw === '') return null;
+    const id = Number(raw);
+    return Number.isFinite(id) ? id : null;
 }
 
 window.getUser = getUser;
+window.sessionUserId = sessionUserId;
+window.unwrapUserRecord = unwrapUserRecord;

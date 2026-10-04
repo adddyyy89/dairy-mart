@@ -4,6 +4,7 @@ import com.dairymart.dairyappserver.dao.*;
 import com.dairymart.dairyappserver.dto.*;
 import com.dairymart.dairyappserver.service.*;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/ledger")
+@Tag(name = "Ledgers", description = "User ledgers and cash transactions")
 public class LedgerController {
 
     Logger logger = LoggerFactory.getLogger(LedgerController.class);

@@ -2,7 +2,6 @@ package com.dairymart.dairyappserver.dao;
 
 import com.dairymart.dairyappserver.dto.ShopDTO;
 import jakarta.persistence.*;
-import org.apache.catalina.User;
 
 import java.sql.Date;
 
@@ -173,5 +172,8 @@ public class ShopDao {
         this.lastUpdated = dto.getLastUpdated();
         this.shopId = dto.getShopId();
         this.userId = dto.getUserId();
+        if (dto.getGst() != null) {
+            this.setGst(new GSTDao(dto.getGst()));
+        }
     }
 }

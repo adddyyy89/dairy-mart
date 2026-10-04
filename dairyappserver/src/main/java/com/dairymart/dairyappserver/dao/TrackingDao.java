@@ -54,12 +54,31 @@ public class TrackingDao {
 
     public TrackingDao(TrackingDTO dto) throws ParseException {
         this.trackId = dto.getTrackId();
-        this.isActive = dto.getActive();
+        this.isActive = dto.getActive() == null || dto.getActive();
         this.longitude = dto.getLongitude();
         this.latitude = dto.getLatitude();
         this.userId = dto.getUserId();
-        Date d = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss").parse(dto.getTimestamp());
-        this.timestamp = new Timestamp(d.getTime());
+        this.timestamp = parseTimestamp(dto.getTimestamp());
+    }
+
+    private static Timestamp parseTimestamp(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return new Timestamp(System.currentTimeMillis());
+        }
+        String[] patterns = {
+                "dd-MM-yyyy HH:mm:ss",
+                "dd-MM-yyyy hh:mm:ss",
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd'T'HH:mm:ss"
+        };
+        for (String pattern : patterns) {
+            try {
+                Date d = new SimpleDateFormat(pattern).parse(raw);
+                return new Timestamp(d.getTime());
+            } catch (ParseException ignored) {
+            }
+        }
+        return new Timestamp(System.currentTimeMillis());
     }
 
     public int getTrackId() {

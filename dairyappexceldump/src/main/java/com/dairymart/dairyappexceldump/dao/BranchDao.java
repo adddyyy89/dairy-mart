@@ -1,7 +1,5 @@
 package com.dairymart.dairyappexceldump.dao;
 
-import com.dairymart.dairyappserver.dto.BranchDTO;
-import com.dairymart.dairyappserver.dto.UserAddressDTO;
 import jakarta.persistence.*;
 
 import java.sql.Date;

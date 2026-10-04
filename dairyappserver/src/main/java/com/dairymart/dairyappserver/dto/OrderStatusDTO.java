@@ -1,8 +1,6 @@
 package com.dairymart.dairyappserver.dto;
 
 import com.dairymart.dairyappserver.dao.OrderStatusDao;
-import jakarta.persistence.Column;
-import jakarta.persistence.Id;
 
 import java.sql.Date;
 

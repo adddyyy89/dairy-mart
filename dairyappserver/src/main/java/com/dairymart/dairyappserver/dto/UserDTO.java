@@ -2,6 +2,8 @@ package com.dairymart.dairyappserver.dto;
 
 import com.dairymart.dairyappserver.dao.UserDao;
 import com.dairymart.dairyappserver.dao.UserTypeDao;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UserDTO {
     private int userId;
@@ -31,10 +33,13 @@ public class UserDTO {
         this.crateCount = createCount;
     }
 
+    @JsonProperty("isActive")
+    @JsonAlias("active")
     public Boolean getActive() {
         return isActive;
     }
 
+    @JsonProperty("isActive")
     public void setActive(Boolean active) {
         isActive = active;
     }

@@ -10,6 +10,7 @@ import com.dairymart.dairyappserver.service.BranchService;
 import com.dairymart.dairyappserver.service.CityService;
 import com.dairymart.dairyappserver.service.StateService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/address")
+@Tag(name = "Address", description = "States, cities, and branches for address pickers")
 public class AddressController {
 
     Logger logger = LoggerFactory.getLogger(AddressController.class);

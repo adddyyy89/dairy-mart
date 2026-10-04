@@ -7,6 +7,7 @@ import com.dairymart.dairyappserver.dto.ShopDTO;
 import com.dairymart.dairyappserver.service.ProductService;
 import com.dairymart.dairyappserver.service.ShopService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +19,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/shop")
+@Tag(name = "Shops", description = "Retailer stores")
 public class ShopController {
 
     Logger logger = LoggerFactory.getLogger(ShopController.class);
@@ -33,8 +36,14 @@ public class ShopController {
         logger.info("getAllShop called.");
 
         List<ShopDao> shopDaos = shopService.getAllShops();
-        List<ShopDTO> shopDTOList = new ArrayList<>(shopDaos.size());
-        shopDaos.stream().forEach(x -> shopDTOList.add(new ShopDTO(x)));
+        List<ShopDTO> shopDTOList = new ArrayList<>();
+        for (ShopDao x : shopDaos) {
+            try {
+                shopDTOList.add(new ShopDTO(x));
+            } catch (Exception ex) {
+                logger.error("Skipping shop id {} while listing shops", x.getShopId(), ex);
+            }
+        }
 
         logger.info("All Shop details fetched");
         return ResponseEntity.status(HttpStatus.OK).body(gson.toJson(shopDTOList));

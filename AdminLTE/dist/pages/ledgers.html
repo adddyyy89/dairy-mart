@@ -87,14 +87,8 @@
         <div class="container-fluid">
           <div class="filter-container">
             <div class="row g-3 align-items-center">
-              <div class="col-auto">
-                <div class="btn-group" role="group" aria-label="Filter Options">
-                  <button type="button" class="btn btn-primary" onclick="filterTable('Show All')">Show All</button>
-                </div>
-              </div>
-              
               <div class="col">
-                <input type="text" id="searchInput" class="form-control" placeholder="Search by name or email..." onkeyup="searchTable()">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search salesman or retailer..." onkeyup="searchTable()">
               </div>
             </div>
           </div>
@@ -102,59 +96,18 @@
           <div class="table-container bg-white">
             <table class="table table-hover mb-0" id="ledgerTable">
               <thead class="table-dark">
-                <tr class="clickable-row">
+                <tr>
                   <th>Ledger Id</th>
                   <th>Salesman Id</th>
                   <th>Salesman Name</th>
                   <th>Retailer Id</th>
                   <th>Retailer Name</th>
-                  <th>Last Transaction Date</th>
-                  <th>Total Credit Amt</th>
-                  <th>Total Debit Amt</th>
+                  <th>Last Updated</th>
+                  <th>Total Credit</th>
+                  <th>Total Debit</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr class="clickable-row">
-                  <td>1</td>
-                  <td>2</td>
-                  <td>Amit Kumar</td>
-                  <td>2</td>
-                  <td>Shop 2, Hanuman Nagar</td>
-                  <td>2025-04-30 17:14:42.939</td>
-                  <td>120.00</td>
-                  <td>0.00</td>
-                </tr>
-                <tr class="clickable-row">
-                  <td>2</td>
-                  <td>2</td>
-                  <td>Amit Kumar</td>
-                  <td>2</td>
-                  <td>Shop 2, Hanuman Nagar</td>
-                  <td>2025-04-30 17:14:42.939</td>
-                  <td>120.00</td>
-                  <td>0.00</td>
-                </tr>
-                <tr class="clickable-row">
-                  <td>3</td>
-                  <td>2</td>
-                  <td>Amit Kumar</td>
-                  <td>2</td>
-                  <td>Shop 2, Hanuman Nagar</td>
-                  <td>2025-04-30 17:14:42.939</td>
-                  <td>120.00</td>
-                  <td>0.00</td>
-                </tr>
-                <tr class="clickable-row">
-                  <td>4</td>
-                  <td>2</td>
-                  <td>Amit Kumar</td>
-                  <td>2</td>
-                  <td>Shop 2, Hanuman Nagar</td>
-                  <td>2025-04-30 17:14:42.939</td>
-                  <td>120.00</td>
-                  <td>0.00</td>
-                </tr>
-              </tbody>
+              <tbody id="ledger-table-body"></tbody>
             </table>
           </div>
         </div>
@@ -182,6 +135,7 @@
   <!--end::Required Plugin(Bootstrap 5)-->
   <!--begin::Required Plugin(AdminLTE)-->
   <script src="../js/adminlte.js"></script>
+  <script src="../js/api.js"></script>
   <script src="../js/ledgers.js"></script>
   <!--end::Required Plugin(AdminLTE)-->
 

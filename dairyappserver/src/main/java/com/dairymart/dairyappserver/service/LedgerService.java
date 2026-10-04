@@ -3,6 +3,7 @@ package com.dairymart.dairyappserver.service;
 import com.dairymart.dairyappserver.dao.*;
 import com.dairymart.dairyappserver.dto.LedgerTransactionsDTO;
 import com.dairymart.dairyappserver.dto.SalesmanLedgerForRetailerDTO;
+import com.dairymart.dairyappserver.dto.SalesmanWalletSummaryDTO;
 import com.dairymart.dairyappserver.repository.*;
 import com.dairymart.dairyappserver.util.DateUtil;
 import jakarta.transaction.Transactional;
@@ -43,6 +44,15 @@ public class LedgerService {
     @Autowired
     private UserWalletService walletService;
 
+    @Autowired
+    private ShopService shopService;
+
+    @Autowired
+    private SalesmanToRetailService salesmanToRetailService;
+
+    @Autowired
+    private NotificationService notificationService;
+
     public List<LedgerTransactionsDao> getSalesmanDashboardTransactions(int salesmanId) {
         List<LedgerDao> ledgerDaos = ledgerRepository.findAll().stream().filter(x -> x.getSalesmanId() == salesmanId).collect(Collectors.toCollection(ArrayList::new));
         logger.info("Fetched all ledgers for salesman: " + salesmanId + ", count = " + ledgerDaos.size());
@@ -55,14 +65,19 @@ public class LedgerService {
         }
 
         logger.info("Fetched all ledger transactions for salesman: " + salesmanId + ", count = " + ledgerTransactionsDaos.size());
-        ledgerTransactionsDaos.sort((o1, o2) -> o1.getCreatedOn().compareTo(o2.getCreatedOn()));
+        ledgerTransactionsDaos.sort(this::compareCreatedOn);
 
         return ledgerTransactionsDaos;
 
     }
 
     public List<LedgerTransactionsDao> getRetailerDashboardTransactions(int retailerId) {
-        List<LedgerDao> ledgerDaos = ledgerRepository.findAll().stream().filter(x -> x.getRetailerId() == retailerId).collect(Collectors.toCollection(ArrayList::new));
+        List<Integer> shopIds = shopService.getShopByRetailerId(retailerId).stream()
+                .map(ShopDao::getShopId)
+                .collect(Collectors.toList());
+        List<LedgerDao> ledgerDaos = ledgerRepository.findAll().stream()
+                .filter(x -> x.getRetailerId() == retailerId || shopIds.contains(x.getRetailerId()))
+                .collect(Collectors.toCollection(ArrayList::new));
         logger.info("Fetched ledger data for retailer : " + retailerId + ", count = " + ledgerDaos.size());
 
 
@@ -73,7 +88,7 @@ public class LedgerService {
         }
 
         logger.info("Fetched ledger data for retailer : " + retailerId + ", count = " + ledgerTransactionsDaos.size());
-        ledgerTransactionsDaos.sort((o1, o2) -> o1.getCreatedOn().compareTo(o2.getCreatedOn()));
+        ledgerTransactionsDaos.sort(this::compareCreatedOn);
 
         return ledgerTransactionsDaos;
 
@@ -133,7 +148,7 @@ public class LedgerService {
 
     public SalesmanLedgerForRetailerDTO getLedgerBalanceBySalesman(long ledgerId) {
         List<LedgerTransactionsDao> ledgerTransactionsDaos = ledgerTransactionsRepository.findAll().stream().filter(t -> t.getLedgerId() == ledgerId).collect(Collectors.toCollection(ArrayList::new));
-        ledgerTransactionsDaos.sort((o1, o2) -> o1.getCreatedOn().compareTo(o2.getCreatedOn()));
+        ledgerTransactionsDaos.sort(this::compareCreatedOn);
 
         double balance = 0d;
         double credit = 0d;
@@ -151,53 +166,258 @@ public class LedgerService {
         }
         balance = credit - debit;
 
-        UserDao retailer = userService.findById(getLedger(ledgerId).getRetailerId());
+        UserDao retailer = resolveRetailerUser(getLedger(ledgerId).getRetailerId());
 
         SalesmanLedgerForRetailerDTO salesmanLedgerForRetailerDTO = new SalesmanLedgerForRetailerDTO();
-        salesmanLedgerForRetailerDTO.setRetailerAddress(retailer.getAddress().getFullAddress());
         salesmanLedgerForRetailerDTO.setBalance(balance);
         salesmanLedgerForRetailerDTO.setTransactionsDTOS(ledgerTransactionsDTOS);
-        salesmanLedgerForRetailerDTO.setRetailerName(retailer.getFirstName() + " " + retailer.getLastName());
+        if (retailer != null) {
+            salesmanLedgerForRetailerDTO.setRetailerName(retailer.getFirstName() + " " + retailer.getLastName());
+            if (retailer.getAddress() != null) {
+                salesmanLedgerForRetailerDTO.setRetailerAddress(retailer.getAddress().getFullAddress());
+            }
+        } else {
+            salesmanLedgerForRetailerDTO.setRetailerName("Retailer");
+            salesmanLedgerForRetailerDTO.setRetailerAddress("");
+        }
 
         return salesmanLedgerForRetailerDTO;
     }
 
+    /**
+     * Salesman records an offline payment (cash/UPI) from the retailer.
+     * Credit: salesman wallet increases, retailer pending (negative wallet) is reduced.
+     * Debit: treated as an extra charge on the retailer (same as an order).
+     */
     @Transactional
     public LedgerTransactionsDao updateSalesmanLedgerTransaction(LedgerTransactionsDao ledgerTransactionsDao) {
-        LedgerTransactionsDao ledgerTransaction = ledgerTransactionsRepository.save(ledgerTransactionsDao);
-
-        LedgerDao ledgerDao = getLedger(ledgerTransaction.getLedgerId());
-
-        // Update wallet of receiver and payee
-        UserWalletDao payeeWallet = new UserWalletDao();
-        UserWalletDao receiverWallet = new UserWalletDao();
-        int payeeUserId = 0;
-        int receiverUserId = 0;
-
-        if(ledgerTransaction.isCredit()) {
-            receiverUserId = ledgerDao.getSalesmanId();
-            payeeUserId = ledgerDao.getRetailerId();
-        } else if(ledgerTransaction.isDebit()) {
-            payeeUserId = ledgerDao.getSalesmanId();
-            receiverUserId = ledgerDao.getRetailerId();
+        if (ledgerTransactionsDao.getPaymentTypeId() <= 0) {
+            ledgerTransactionsDao.setPaymentTypeId(1);
+        }
+        if (ledgerTransactionsDao.getCreatedOn() == null) {
+            ledgerTransactionsDao.setCreatedOn(new Timestamp(System.currentTimeMillis()));
+        }
+        if (ledgerTransactionsDao.getLastUpdated() == null) {
+            ledgerTransactionsDao.setLastUpdated(new Timestamp(System.currentTimeMillis()));
+        }
+        if (ledgerTransactionsDao.getTransactionId() == 0) {
+            ledgerTransactionsDao.setTransactionsId(0);
         }
 
-        payeeWallet = walletService.getWalletDetails(payeeUserId);
-        receiverWallet = walletService.getWalletDetails(receiverUserId);
+        LedgerDao ledgerDao = getLedger(ledgerTransactionsDao.getLedgerId());
+        if (ledgerDao == null) {
+            throw new IllegalArgumentException("Ledger not found");
+        }
 
-        // Update Payee
-        payeeWallet.setBalance(payeeWallet.getBalance() - ledgerTransaction.getAmount());
-        payeeWallet.setLastUpdated(new Date(System.currentTimeMillis()));
-        payeeWallet.setOutstanding(payeeWallet.getOutstanding() - ledgerTransaction.getAmount());
-        walletService.addWalletDetails(payeeWallet);
+        LedgerTransactionsDao ledgerTransaction = ledgerTransactionsRepository.save(ledgerTransactionsDao);
+        int retailerUserId = userIdForLedgerParty(ledgerDao.getRetailerId());
+        double amount = ledgerTransaction.getAmount();
 
-        // Update Receiver
-        receiverWallet.setBalance(receiverWallet.getBalance() + ledgerTransaction.getAmount());
-        receiverWallet.setLastUpdated(new Date(System.currentTimeMillis()));
-        receiverWallet.setOutstanding(receiverWallet.getOutstanding() - ledgerTransaction.getAmount());
-        walletService.addWalletDetails(receiverWallet);
-
+        if (ledgerTransaction.isCredit()) {
+            walletService.applyDelta(ledgerDao.getSalesmanId(), amount, 0);
+            walletService.applyDelta(retailerUserId, amount, -amount);
+        } else if (ledgerTransaction.isDebit()) {
+            walletService.applyDelta(retailerUserId, -amount, amount);
+        }
+        try {
+            notificationService.notifyLedgerTransaction(
+                    ledgerDao.getSalesmanId(), retailerUserId, ledgerTransaction.isCredit(),
+                    amount, ledgerTransaction.getTransactionId());
+        } catch (Exception ex) {
+            logger.error("Failed to notify ledger transaction {}", ledgerTransaction.getTransactionId(), ex);
+        }
+        logger.info("Ledger tx {} ledger={} credit={} amount={}",
+                ledgerTransaction.getTransactionId(), ledgerDao.getLedgerId(),
+                ledgerTransaction.isCredit(), amount);
         return ledgerTransaction;
+    }
+
+    /**
+     * When an order leaves NEW, debit the retailer ledger and wallet (can go negative).
+     * Salesman wallet is unchanged until they record a collection.
+     */
+    @Transactional
+    public void postOrderCharge(RetailOrderDao order) {
+        if (order == null) {
+            return;
+        }
+        double amount = orderAmount(order);
+        if (amount <= 0) {
+            logger.warn("Skipping ledger post for order {} — amount is {}", order.getOrderId(), amount);
+            return;
+        }
+        int shopId = order.getRetailerId();
+        int retailerUserId = userIdForShop(shopId);
+        Integer salesmanId = resolveSalesmanUserId(shopId, retailerUserId);
+        if (salesmanId == null) {
+            logger.error("No salesman mapping for shop {} / retailer user {} — cannot post order {} to ledger",
+                    shopId, retailerUserId, order.getOrderId());
+            return;
+        }
+
+        LedgerDao ledger = findOrCreateLedger(salesmanId, retailerUserId, order.getCreatedBy());
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        LedgerTransactionsDao tx = new LedgerTransactionsDao();
+        tx.setLedgerId(ledger.getLedgerId());
+        tx.setAmount(amount);
+        tx.setDebit(true);
+        tx.setCredit(false);
+        tx.setPaymentTypeId(1);
+        tx.setCreatedOn(now);
+        tx.setLastUpdated(now);
+        tx.setCreatedBy(order.getCreatedBy());
+        ledgerTransactionsRepository.save(tx);
+
+        walletService.applyDelta(retailerUserId, -amount, amount);
+        try {
+            notificationService.notifyLedgerTransaction(salesmanId, retailerUserId, false, amount, tx.getTransactionId());
+        } catch (Exception ex) {
+            logger.error("Failed to notify order ledger charge for order {}", order.getOrderId(), ex);
+        }
+        logger.info("Posted order {} amount {} to ledger {} for retailer {}",
+                order.getOrderId(), amount, ledger.getLedgerId(), retailerUserId);
+    }
+
+    public LedgerDao findOrCreateLedger(int salesmanId, int retailerUserId, int createdBy) {
+        for (LedgerDao existing : ledgerRepository.findAll()) {
+            if (existing.getSalesmanId() != salesmanId) {
+                continue;
+            }
+            if (existing.getRetailerId() == retailerUserId) {
+                return existing;
+            }
+            ShopDao shop = shopService.findById(existing.getRetailerId());
+            if (shop != null && shop.getUserId() == retailerUserId) {
+                return existing;
+            }
+        }
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        LedgerDao ledger = new LedgerDao();
+        ledger.setSalesmanId(salesmanId);
+        ledger.setRetailerId(retailerUserId);
+        ledger.setActive(true);
+        ledger.setCreatedBy(createdBy);
+        ledger.setCreatedOn(now);
+        ledger.setLastUpdated(now);
+        return ledgerRepository.save(ledger);
+    }
+
+    private int userIdForShop(int shopId) {
+        ShopDao shop = shopService.findById(shopId);
+        if (shop != null && shop.getUserId() > 0) {
+            return shop.getUserId();
+        }
+        return shopId;
+    }
+
+    private int userIdForLedgerParty(int retailerOrShopId) {
+        UserDao user = userService.findById(retailerOrShopId);
+        if (user != null) {
+            return user.getUserId();
+        }
+        return userIdForShop(retailerOrShopId);
+    }
+
+    private UserDao resolveRetailerUser(int retailerOrShopId) {
+        return userService.findById(userIdForLedgerParty(retailerOrShopId));
+    }
+
+    private Integer resolveSalesmanUserId(int shopId, int retailerUserId) {
+        List<SalesmanToRetailDao> maps = salesmanToRetailService.getAllSalestoRetail();
+        for (SalesmanToRetailDao map : maps) {
+            if (Boolean.FALSE.equals(map.isActive())) {
+                continue;
+            }
+            if (map.getRetailerId() == shopId || map.getRetailerId() == retailerUserId) {
+                return map.getSalesmanId();
+            }
+        }
+        for (SalesmanToRetailDao map : maps) {
+            if (map.getRetailerId() == shopId || map.getRetailerId() == retailerUserId) {
+                return map.getSalesmanId();
+            }
+        }
+        return null;
+    }
+
+    private double orderAmount(RetailOrderDao order) {
+        List<RetailOrderDetailsDao> details = order.getOrderDetails();
+        if (details == null || details.isEmpty()) {
+            return 0;
+        }
+        double total = 0;
+        for (RetailOrderDetailsDao line : details) {
+            double qty = parseNumber(line.getQuantity());
+            double rate = parseNumber(line.getSaleRate());
+            total += qty * rate;
+        }
+        return total;
+    }
+
+    private double parseNumber(String value) {
+        if (value == null || value.isBlank()) {
+            return 0;
+        }
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private int compareCreatedOn(LedgerTransactionsDao a, LedgerTransactionsDao b) {
+        Timestamp ta = a.getCreatedOn();
+        Timestamp tb = b.getCreatedOn();
+        if (ta == null && tb == null) {
+            return 0;
+        }
+        if (ta == null) {
+            return 1;
+        }
+        if (tb == null) {
+            return -1;
+        }
+        return ta.compareTo(tb);
+    }
+
+    public List<SalesmanWalletSummaryDTO> getSalesmanWalletSummaries() {
+        List<SalesmanWalletSummaryDTO> summaries = new ArrayList<>();
+        for (UserDao salesman : userService.findByTypeId(2)) {
+            summaries.add(getSalesmanWalletSummary(salesman));
+        }
+        return summaries;
+    }
+
+    public SalesmanWalletSummaryDTO getSalesmanWalletSummary(UserDao salesman) {
+        int salesmanId = salesman.getUserId();
+        UserWalletDao wallet = walletService.getOrCreateWallet(salesmanId);
+        double received = 0;
+        double pending = 0;
+        Map<LedgerDao, Double> ledgers = getSalesmanLedgerDetails(salesmanId);
+        Set<Long> ledgerIds = ledgers.keySet().stream().map(LedgerDao::getLedgerId).collect(Collectors.toSet());
+        List<LedgerTransactionsDao> txs = ledgerTransactionsRepository.findAll().stream()
+                .filter(t -> ledgerIds.contains(t.getLedgerId()))
+                .collect(Collectors.toList());
+        for (LedgerTransactionsDao tx : txs) {
+            if (tx.isCredit()) {
+                received += tx.getAmount();
+            }
+        }
+        for (double net : ledgers.values()) {
+            if (net < 0) {
+                pending += -net;
+            }
+        }
+        SalesmanWalletSummaryDTO dto = new SalesmanWalletSummaryDTO();
+        dto.setUserId(salesmanId);
+        dto.setName((salesman.getFirstName() == null ? "" : salesman.getFirstName()) + " "
+                + (salesman.getLastName() == null ? "" : salesman.getLastName()));
+        dto.setPhoneNumber(salesman.getPhoneNumber());
+        dto.setWalletBalance(wallet.getBalance());
+        dto.setOutstanding(wallet.getOutstanding());
+        dto.setReceived(received);
+        dto.setPending(pending);
+        return dto;
     }
 
     public DailyLedgerDao getLastDailyLedger(int userId) {

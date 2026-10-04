@@ -146,7 +146,35 @@
             </div>
             <!-- /.col -->
           </div>
-          <!-- /.row -->
+          <div class="row mb-3">
+            <div class="col-md-8">
+              <div class="card h-100">
+                <div class="card-header"><h3 class="card-title">Recent activity</h3>
+                  <a href="./pages/activity.html" class="float-end">View all</a>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                      <thead><tr><th>Type</th><th>What happened</th><th>When</th></tr></thead>
+                      <tbody id="recent-activity-body"><tr><td colspan="3" class="text-muted">Loading...</td></tr></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card h-100">
+                <div class="card-header"><h3 class="card-title">Currently online</h3>
+                  <a href="./pages/sessions.html" class="float-end">Logins</a>
+                </div>
+                <div class="card-body p-0">
+                  <ul class="list-group list-group-flush" id="online-users-list">
+                    <li class="list-group-item text-muted">Loading...</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
           <!--begin::Row-->
           <div class="row">
             <div class="col-md-12">
@@ -157,43 +185,40 @@
                   <div class="row">
                     <div class="col-md-12">
                       <p class="text-center"><strong>Order Status</strong></p>
+                      <p class="text-center text-secondary small">Today's orders by status (public.orderstatus ids 1–5)</p>
                       <div class="progress-group">
-                        New Orders
-                        <span class="float-end" id="order-new"><b>10</b>/10</span>
+                        New
+                        <span class="float-end" id="order-new"><b>0</b>/0</span>
                         <div class="progress progress-sm">
-                          <div class="progress-bar text-bg-primary" style="width: 100%"></div>
+                          <div class="progress-bar text-bg-primary" id="order-new-bar" style="width: 0%"></div>
                         </div>
                       </div>
-                      <!-- /.progress-group -->
                       <div class="progress-group">
                         Confirmed
-                        <span class="float-end" id="order-confirmed"><b>0</b>/10</span>
+                        <span class="float-end" id="order-confirmed"><b>0</b>/0</span>
                         <div class="progress progress-sm">
-                          <div class="progress-bar text-bg-danger" style="width: 0%"></div>
+                          <div class="progress-bar text-bg-info" id="order-confirmed-bar" style="width: 0%"></div>
                         </div>
                       </div>
-                      <!-- /.progress-group -->
                       <div class="progress-group">
                         <span class="progress-text">Rejected</span>
-                        <span class="float-end" id="order-rejected"><b>0</b>/10</span>
+                        <span class="float-end" id="order-rejected"><b>0</b>/0</span>
                         <div class="progress progress-sm">
-                          <div class="progress-bar text-bg-success" style="width: 0%"></div>
+                          <div class="progress-bar text-bg-danger" id="order-rejected-bar" style="width: 0%"></div>
                         </div>
                       </div>
-                      <!-- /.progress-group -->
                       <div class="progress-group">
                         Dispatched
-                        <span class="float-end" id="order-dispatched"><b>0</b>/10</span>
+                        <span class="float-end" id="order-dispatched"><b>0</b>/0</span>
                         <div class="progress progress-sm">
-                          <div class="progress-bar text-bg-warning" style="width: 0%"></div>
+                          <div class="progress-bar text-bg-warning" id="order-dispatched-bar" style="width: 0%"></div>
                         </div>
                       </div>
-                      <!-- /.progress-group -->
                       <div class="progress-group">
                         Delivered
-                        <span class="float-end" id="order-delivered"><b>0</b>/10</span>
+                        <span class="float-end" id="order-delivered"><b>0</b>/0</span>
                         <div class="progress progress-sm">
-                          <div class="progress-bar text-bg-warning" style="width: 0%"></div>
+                          <div class="progress-bar text-bg-success" id="order-delivered-bar" style="width: 0%"></div>
                         </div>
                       </div>
                     </div>
@@ -238,76 +263,14 @@
                           <th>Order Status</th>
                         </tr>
                       </thead>
-                      <tbody id="latest-orders-body">
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR9842</a>
-                          </td>
-                          <td>Call of Duty IV</td>
-                          <td><span class="badge text-bg-success"> Shipped </span></td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR1848</a>
-                          </td>
-                          <td>Samsung Smart TV</td>
-                          <td><span class="badge text-bg-warning">Pending</span></td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR7429</a>
-                          </td>
-                          <td>iPhone 6 Plus</td>
-                          <td><span class="badge text-bg-danger"> Delivered </span></td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR7429</a>
-                          </td>
-                          <td>Samsung Smart TV</td>
-                          <td><span class="badge text-bg-info">Processing</span></td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR1848</a>
-                          </td>
-                          <td>Samsung Smart TV</td>
-                          <td><span class="badge text-bg-warning">Pending</span></td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR7429</a>
-                          </td>
-                          <td>iPhone 6 Plus</td>
-                          <td><span class="badge text-bg-danger"> Delivered </span></td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR9842</a>
-                          </td>
-                          <td>Call of Duty IV</td>
-                          <td><span class="badge text-bg-success">Shipped</span></td>
-                        </tr>
-                      </tbody>
+                      <tbody id="latest-orders-body"></tbody>
                     </table>
                   </div>
                   <!-- /.table-responsive -->
                 </div>
                 <!-- /.card-body -->
                 <div class="card-footer clearfix">
-                  <a href="javascript:void(0)" class="btn btn-sm btn-primary float-start">
-                    Place New Order
-                  </a>
-                  <a href="./pages/orders.html" class="btn btn-sm btn-secondary float-end">
-                    View All Orders
-                  </a>
+                  <a href="./pages/orders.html" class="btn btn-sm btn-secondary float-end">View All Orders</a>
                 </div>
                 <!-- /.card-footer -->
               </div>
@@ -340,83 +303,14 @@
                           <th>Amount</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR9842</a>
-                          </td>
-                          <td>Call of Duty IV</td>
-                          <td><span class="badge text-bg-success"> Credit </span></td>
-                          <td>200.00</td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR1848</a>
-                          </td>
-                          <td>Samsung Smart TV</td>
-                          <td><span class="badge text-bg-success"> Credit </span></td>
-                          <td>200.00</td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR7429</a>
-                          </td>
-                          <td>iPhone 6 Plus</td>
-                          <td><span class="badge text-bg-success"> Credit </span></td>
-                          <td>200.00</td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR7429</a>
-                          </td>
-                          <td>Samsung Smart TV</td>
-                          <td><span class="badge text-bg-success"> Credit </span></td>
-                          <td>200.00</td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR1848</a>
-                          </td>
-                          <td>Samsung Smart TV</td>
-                          <td><span class="badge text-bg-success"> Credit </span></td>
-                          <td>200.00</td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR7429</a>
-                          </td>
-                          <td>iPhone 6 Plus</td>
-                          <td><span class="badge text-bg-success"> Credit </span></td>
-                          <td>200.00</td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <a href="pages/examples/invoice.html"
-                              class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">OR9842</a>
-                          </td>
-                          <td>Call of Duty IV</td>
-                          <td><span class="badge text-bg-success"> Credit </span></td>
-                          <td>200.00</td>
-                        </tr>
-                      </tbody>
+                      <tbody id="latest-transactions-body"></tbody>
                     </table>
                   </div>
                   <!-- /.table-responsive -->
                 </div>
                 <!-- /.card-body -->
                 <div class="card-footer clearfix">
-                  <a href="javascript:void(0)" class="btn btn-sm btn-primary float-start">
-                    Place New Order
-                  </a>
-                  <a href="javascript:void(0)" class="btn btn-sm btn-secondary float-end">
-                    View All Orders
-                  </a>
+                  <a href="./pages/ledgers.html" class="btn btn-sm btn-secondary float-end">View ledgers</a>
                 </div>
                 <!-- /.card-footer -->
               </div>
@@ -449,6 +343,7 @@
   <!--end::Required Plugin(Bootstrap 5)--><!--begin::Required Plugin(AdminLTE)-->
   <script src="./js/adminlte.js"></script>
 
+  <script src="./js/api.js"></script>
   <script src="./js/home.js"></script>
   <!--end::Required Plugin(AdminLTE)--><!--begin::OverlayScrollbars Configure-->
 

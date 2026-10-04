@@ -37,6 +37,7 @@ public class ProductDTO {
     private Date lastUpdated;
 
 
+    @com.fasterxml.jackson.annotation.JsonProperty("isActive")
     private Boolean isActive;
 
 
@@ -227,10 +228,12 @@ public class ProductDTO {
         this.lastUpdated = lastUpdated;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("isActive")
     public Boolean getActive() {
         return isActive;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("isActive")
     public void setActive(Boolean active) {
         isActive = active;
     }

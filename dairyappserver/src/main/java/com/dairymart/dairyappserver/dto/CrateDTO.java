@@ -38,7 +38,11 @@ public class CrateDTO {
             this.type = new UserTypeDTO(dao.getType());
         }
         if(dao.getUser() != null) {
-            this.user = new UserDTO(dao.getUser());
+            try {
+                this.user = new UserDTO(dao.getUser());
+            } catch (Exception ignored) {
+                this.user = null;
+            }
         }
     }
 

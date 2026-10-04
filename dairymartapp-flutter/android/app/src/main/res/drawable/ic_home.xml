@@ -1,0 +1,20 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center">
+
+    <!-- Background Circle -->
+    <item>
+        <shape android:shape="oval">
+            <size android:width="192dp" android:height="192dp" />
+            <solid android:color="#FF5733" />
+        </shape>
+    </item>
+
+    <!-- Foreground Circle -->
+    <item android:top="50dp" android:left="50dp">
+        <shape android:shape="oval">
+            <size android:width="92dp" android:height="92dp" />
+            <solid android:color="#C70039" />
+        </shape>
+    </item>
+
+</layer-list>

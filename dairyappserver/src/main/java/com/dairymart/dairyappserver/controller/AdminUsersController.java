@@ -10,6 +10,7 @@ import com.dairymart.dairyappserver.service.LedgerService;
 import com.dairymart.dairyappserver.service.RetailOrderService;
 import com.dairymart.dairyappserver.service.UserService;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/admin/users")
+@Tag(name = "Admin users", description = "Salesmen and retailers for AdminLTE")
 public class AdminUsersController {
 
     Logger logger = LoggerFactory.getLogger(AdminUsersController.class);

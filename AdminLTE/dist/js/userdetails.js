@@ -1,81 +1,57 @@
 let originalData = {};
 
-let dummyUserData =
-{
-    "userId": 0,
-    "phoneNumber": "9674350488",
-    "firstName": "admin",
-    "lastName": "user",
-    "userTypeId": 0,
-    "emailId": "dairymartbussinessmail@gmail.com",
-    "addressId": 0,
-    "createdBy": 0,
-    "createdOn": "2024-10-16",
-    "lastUpdated": "2024-10-16",
-    "crateCount": 0,
-    "type": {
-        "userTypeId": 0,
-        "userTypeDesc": "admin",
-        "isActive": true,
-        "createOn": "Oct 16, 2024",
-        "createBy": 0
-    },
-    "address": {
-        "addressId": 0,
-        "fullAddress": "Sample Test Address",
-        "pinCode": "263139",
-        "cityId": 0,
-        "city": {
-            "cityId": 0,
-            "cityName": "Haldwani",
-            "stateId": 0,
-            "state": {
-                "stateId": 0,
-                "stateName": "Uttarakhand",
-                "countryId": 0,
-                "country": {
-                    "countryId": 0,
-                    "countryName": "India"
-                }
-            }
-        }
-    },
-    "isActive": true,
-    "password": "{noop}admin"
+let originalShop = null;
+
+function displayTax(value) {
+  if (!value || value === 'NA') return '';
+  return value;
+}
+
+function userTypeIdOf(data) {
+  return Number(data.userTypeId || data.type?.userTypeId || 0);
+}
+
+async function loadShopForUser(userId, typeId) {
+  const section = document.getElementById('retailerGstSection');
+  originalShop = null;
+  if (Number(typeId) !== 3) {
+    section.style.display = 'none';
+    return;
+  }
+  try {
+    const shops = asList(await apiGet('/shop/get/user/' + userId));
+    const shop = shops[0] || null;
+    originalShop = shop;
+    if (!shop) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = '';
+    const gst = shop.gst || {};
+    document.getElementById('shopId').value = shop.shopId ?? '';
+    document.getElementById('shopName').value = shop.shopName ?? '';
+    document.getElementById('gstNumber').value = displayTax(gst.gstNumber || shop.gstNumber);
+    document.getElementById('panNumber').value = displayTax(gst.panNumber || shop.panNumber);
+    document.getElementById('aadharNumber').value = displayTax(gst.aadharNumber || shop.aadharNumber);
+  } catch (error) {
+    console.error(error);
+    section.style.display = 'none';
+  }
 }
 
 async function loadUserData() {
-
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
 
     try {
-        const sessionString = sessionStorage.getItem('user');
-        const userData = JSON.parse(sessionString);
-        const username = userData.phoneNumber;
-        const password = userData.password;
-        const encodedCredentials = btoa(`${username}:${password}`);
-        const response = await fetch(`http://localhost:8080/user/get/${id}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                // Add the Authorization header here
-                'Authorization': `Basic ${encodedCredentials}`
-            }
-        });
-        if (!response.ok) throw new Error("User not found");
-
-        const data = await response.json();
+        const data = await apiGet('/user/get/' + id);
         originalData = data;
         populateForm(data);
+        await loadShopForUser(data.userId, userTypeIdOf(data));
     } catch (error) {
         console.error("Error:", error);
         alert("Could not load user details.");
     }
-
-    // dummy data for now
-    //originalData = dummyUserData;
-    //populateForm(dummyUserData);
 }
 
 
@@ -91,8 +67,10 @@ function populateForm(data) {
     if (data.type) {
         document.getElementById('userTypeId').value = data.type.userTypeId ?? "";
     }
-    if(!data.isActive) {
+    if(data.isActive === false || data.active === false) {
         document.getElementById('isActive').checked = false;
+    } else {
+        document.getElementById('isActive').checked = true;
     }
      
 
@@ -136,8 +114,10 @@ function toggleEditMode() {
 }
 
 function cancelEdit() {
-    // 1. Re-populate the form with the original data stored during load
     populateForm(originalData);
+    if (originalShop) {
+      loadShopForUser(originalData.userId, 3);
+    }
 
     // 2. Select all editable fields
     const inputs = document.querySelectorAll('.editable-field');
@@ -165,16 +145,23 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     const formData = new FormData(e.target);
     const updatedData = Object.fromEntries(formData.entries());
 
+    const phoneNumber = String(updatedData.phoneNumber || document.getElementById('phoneNumber').value || '').replace(/\D/g, '');
+    if (!/^\d{10}$/.test(phoneNumber)) {
+        alert('Phone number must be 10 digits.');
+        return;
+    }
+
     const userPayload = {
-        userId: updatedData.userId,
-        firstName: updatedData.firstName,
-        lastName: updatedData.lastName,
-        emailId: updatedData.emailId,
-        phoneNumber: updatedData.phoneNumber,
-        userTypeId: updatedData.userTypeId,
-        addressId: originalData.address.addressId,
+        userId: updatedData.userId || originalData.userId,
+        firstName: updatedData.firstName || document.getElementById('userFirstName').value,
+        lastName: updatedData.lastName || document.getElementById('userLastName').value,
+        emailId: updatedData.emailId || document.getElementById('userEmail').value,
+        phoneNumber,
+        userTypeId: updatedData.userTypeId || userTypeIdOf(originalData),
+        addressId: originalData.address?.addressId,
         password: originalData.password,
-        isActive: document.getElementById('isActive').checked
+        isActive: document.getElementById('isActive').checked,
+        active: document.getElementById('isActive').checked
     };
 
     console.log('Updated user data:', userPayload);
@@ -206,6 +193,28 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
+            const shopId = parseInt(document.getElementById('shopId').value, 10);
+            if (shopId) {
+                try {
+                    await apiPost('/shop/update', {
+                        shopId,
+                        shopName: document.getElementById('shopName').value.trim(),
+                        userId: parseInt(originalData.userId, 10),
+                        addressId: originalShop?.addressId || originalData.address?.addressId || 0,
+                        gstId: originalShop?.gstId || originalShop?.gst?.gstId || 0,
+                        isActive: true,
+                        gst: {
+                            gstId: originalShop?.gstId || originalShop?.gst?.gstId || 0,
+                            gstNumber: document.getElementById('gstNumber').value.trim(),
+                            panNumber: document.getElementById('panNumber').value.trim(),
+                            aadharNumber: document.getElementById('aadharNumber').value.trim(),
+                        },
+                    });
+                } catch (shopErr) {
+                    alert('User saved, but shop GST update failed: ' + shopErr.message);
+                    return;
+                }
+            }
             location.reload();
         } else {
             alert('Update failed.');

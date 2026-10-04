@@ -64,7 +64,7 @@
         <div class="container-fluid">
           <div class="row">
             <div class="col-sm-6">
-              <h3 class="mb-0">Add New User</h3>
+              <h3 class="mb-0" id="pageTitle">Add New User</h3>
             </div>
             <div class="col-sm-6">
               <ol class="breadcrumb float-sm-end">
@@ -97,7 +97,7 @@
                   <div class="row mb-3">
                     <div class="col-md-6">
                       <label for="phoneNumber" class="form-label">Phone Number <span class="text-danger">*</span></label>
-                      <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber" required pattern="[0-9]{10}" placeholder="10 digit number">
+                      <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber" required maxlength="10" inputmode="numeric" pattern="[0-9]{10}" placeholder="10 digit number">
                     </div>
                     <div class="col-md-6">
                       <label for="emailId" class="form-label">Email <span class="text-danger">*</span></label>
@@ -121,6 +121,27 @@
                     </div>
                   </div>
                   
+                  <div id="shopNameGroup" style="display: none;">
+                    <div class="mb-3">
+                      <label for="shopName" class="form-label">Shop Name <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" id="shopName" name="shopName" placeholder="Retail shop name">
+                    </div>
+                    <div class="row mb-3">
+                      <div class="col-md-4">
+                        <label for="gstNumber" class="form-label">GST Number</label>
+                        <input type="text" class="form-control" id="gstNumber" placeholder="Optional">
+                      </div>
+                      <div class="col-md-4">
+                        <label for="panNumber" class="form-label">PAN</label>
+                        <input type="text" class="form-control" id="panNumber" placeholder="Optional">
+                      </div>
+                      <div class="col-md-4">
+                        <label for="aadharNumber" class="form-label">Aadhaar</label>
+                        <input type="text" class="form-control" id="aadharNumber" placeholder="Optional">
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="mb-3">
                     <label for="fullAddress" class="form-label">Full Address <span class="text-danger">*</span></label>
                     <textarea class="form-control" id="fullAddress" name="fullAddress" rows="3" required></textarea>
@@ -156,7 +177,7 @@
                     <button type="submit" class="btn btn-primary">
                       <i class="bi bi-plus-lg me-1"></i>Add User
                     </button>
-                    <a href="./users.html" class="btn btn-secondary">
+                    <a href="./users.html" class="btn btn-secondary" id="cancelLink">
                       <i class="bi bi-x-lg me-1"></i>Cancel
                     </a>
                   </div>
@@ -190,6 +211,7 @@
   <!--end::Required Plugin(Bootstrap 5)-->
   <!--begin::Required Plugin(AdminLTE)-->
   <script src="../js/adminlte.js"></script>
+  <script src="../js/api.js"></script>
   <script src="../js/adduser.js"></script>
   <!--end::Required Plugin(AdminLTE)-->
 

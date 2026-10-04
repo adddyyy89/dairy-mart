@@ -1,7 +1,6 @@
 package com.dairymart.dairyappserver.dto;
 
 import com.dairymart.dairyappserver.dao.*;
-import jakarta.persistence.*;
 
 import java.sql.Date;
 import java.util.ArrayList;
@@ -32,6 +31,8 @@ public class RetailOrderDTO {
     private OrderStatusDTO status;
 
     private List<RetailOrderDetailsDTO> orderDetails;
+
+    private List<InventoryItemDTO> inventory;
 
     public RetailOrderDTO() {
     }
@@ -165,5 +166,13 @@ public class RetailOrderDTO {
                 this.orderDetails.add(new RetailOrderDetailsDTO(d));
             }
         }
+    }
+
+    public List<InventoryItemDTO> getInventory() {
+        return inventory;
+    }
+
+    public void setInventory(List<InventoryItemDTO> inventory) {
+        this.inventory = inventory;
     }
 }

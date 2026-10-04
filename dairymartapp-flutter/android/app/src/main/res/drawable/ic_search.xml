@@ -1,0 +1,20 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center">
+
+    <!-- Background Circle -->
+    <item>
+        <shape android:shape="oval">
+            <size android:width="192dp" android:height="192dp"/>
+            <solid android:color="#FF5733"/> <!-- Outer Color -->
+        </shape>
+    </item>
+
+    <!-- Inner Circle -->
+    <item android:left="30dp" android:right="30dp" android:top="30dp" android:bottom="30dp">
+        <shape android:shape="oval">
+            <size android:width="132dp" android:height="132dp"/> <!-- Inner Circle Size -->
+            <solid android:color="#C70039"/> <!-- Inner Color -->
+        </shape>
+    </item>
+
+</layer-list>

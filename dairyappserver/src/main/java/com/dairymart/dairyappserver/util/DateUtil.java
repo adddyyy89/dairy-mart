@@ -34,6 +34,9 @@ public class DateUtil {
     }
 
     public static boolean isSameDay(Timestamp timestamp) {
+        if (timestamp == null) {
+            return false;
+        }
         LocalDate date1 = timestamp.toLocalDateTime().toLocalDate();
         LocalDate date2 = Timestamp.valueOf(LocalDateTime.now()).toLocalDateTime().toLocalDate();
         return date1.isEqual(date2);

@@ -1,6 +1,7 @@
 package com.dairymart.dairyappserver.controller;
 
 import com.dairymart.dairyappserver.service.ExcelService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/exceldump")
+@Tag(name = "Excel dump", description = "Download DairyMartDump.xlsx")
 public class ExcelDumpController {
 
     Logger logger = LoggerFactory.getLogger(ExcelDumpController.class);

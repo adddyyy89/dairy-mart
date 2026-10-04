@@ -43,6 +43,10 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
     TextView orderPlacedVal;
     TextView crateAssignedVal;
     TextView engagedCrateVal;
+    TextView salesmanName;
+
+    TextView salesmanPhonenumber;
+
 
     LinearLayout nav_activity;
     LinearLayout nav_delivery;
@@ -80,6 +84,8 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
 
             loadData();
 
+            salesmanName = findViewById(R.id.salesman_dashboard_salesmanname);
+            salesmanPhonenumber = findViewById(R.id.salesman_dashboard_phonenumber);
             nav_activity = findViewById(R.id.nav_activity);
             nav_delivery = findViewById(R.id.nav_delivery);
             nav_ledger = findViewById(R.id.nav_ledger);
@@ -194,6 +200,8 @@ public class SalesmanDashboardActivity extends AppCompatActivity {
             crateAssignedVal.setText(String.valueOf(jsonObject.getJSONObject("map").getInt("cratesassigned")));
             balanceVal.setText(String.valueOf(jsonObject.getJSONObject("map").getDouble("walletbalance")));
             orderPlacedVal.setText(String.valueOf(jsonObject.getJSONObject("map").getInt("ordersplaced")));
+            salesmanName.setText(String.valueOf(jsonObject.getJSONObject("map").getString("salesmanname")));
+            salesmanPhonenumber.setText(String.valueOf(jsonObject.getJSONObject("map").getString("salesmanphonenumber")));
 
 
             // Update recent transactions

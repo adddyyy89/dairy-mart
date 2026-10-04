@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Dairy Mart | Salesman</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css" crossorigin="anonymous" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/styles/overlayscrollbars.min.css" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="../css/adminlte.css" />
+  <style>
+    .stat-card { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.08); }
+    #map { height: 340px; border-radius: 8px; }
+  </style>
+</head>
+<body class="layout-fixed sidebar-expand-lg sidebar-open bg-body-tertiary">
+  <script src="../js/auth.js"></script>
+  <div class="app-wrapper">
+    <div class="app-header navbar navbar-expand bg-body" id="header-container"></div>
+    <div class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark" id="sidebar-container"></div>
+    <main class="app-main">
+      <div class="app-content-header">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-sm-6">
+              <h3 class="mb-0" id="salesmanName">Salesman</h3>
+              <div class="text-muted" id="salesmanPhone"></div>
+              <a id="editProfile" class="small" href="./userdetails.html">Edit profile</a>
+            </div>
+            <div class="col-sm-6">
+              <ol class="breadcrumb float-sm-end">
+                <li class="breadcrumb-item"><a href="../home.html">Home</a></li>
+                <li class="breadcrumb-item"><a href="./salesmen.html">Salesmen</a></li>
+                <li class="breadcrumb-item active">Track</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="app-content">
+        <div class="container-fluid">
+          <div id="alertMessage" class="mb-3" style="display:none"></div>
+          <div class="row g-3 mb-3">
+            <div class="col-6 col-lg-2"><div class="stat-card"><div class="text-muted small">Wallet</div><div id="statWallet" class="fw-bold">—</div></div></div>
+            <div class="col-6 col-lg-2"><div class="stat-card"><div class="text-muted small">Orders</div><div id="statOrders" class="fw-bold">—</div></div></div>
+            <div class="col-6 col-lg-2"><div class="stat-card"><div class="text-muted small">Crates</div><div id="statCrates" class="fw-bold">—</div></div></div>
+            <div class="col-6 col-lg-2"><div class="stat-card"><div class="text-muted small">Engaged</div><div id="statEngaged" class="fw-bold">—</div></div></div>
+            <div class="col-6 col-lg-2"><div class="stat-card"><div class="text-muted small">Outstanding</div><div id="statOutstanding" class="fw-bold">—</div></div></div>
+            <div class="col-6 col-lg-2"><div class="stat-card"><div class="text-muted small">Ledger wallet</div><div id="statLedgerWallet" class="fw-bold">—</div></div></div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-lg-7">
+              <div class="stat-card">
+                <h5>Today's GPS</h5>
+                <div class="small text-muted mb-2" id="gpsStatus">Loading...</div>
+                <div id="map"></div>
+              </div>
+            </div>
+            <div class="col-lg-5">
+              <div class="stat-card h-100">
+                <h5>Assigned retailers</h5>
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0">
+                    <thead><tr><th>Shop</th><th>Vehicle</th><th>Id</th></tr></thead>
+                    <tbody id="shops-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="stat-card mb-3">
+            <h5>Assign or return crates</h5>
+            <div class="row g-2 align-items-end">
+              <div class="col-auto">
+                <label class="form-label">Quantity</label>
+                <input type="number" min="1" class="form-control" id="assignCrateQty" value="1">
+              </div>
+              <div class="col-auto">
+                <button type="button" class="btn btn-primary" id="assignCrateBtn">Assign from branch</button>
+              </div>
+              <div class="col-auto">
+                <button type="button" class="btn btn-outline-secondary" id="returnCrateBtn">Return to branch</button>
+              </div>
+              <div class="col-auto">
+                <a class="btn btn-outline-secondary" href="./crates.html">All crates</a>
+              </div>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-lg-5">
+              <div class="stat-card">
+                <h5>Ledgers</h5>
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0">
+                    <thead><tr><th>Id</th><th>Retailer</th><th>Balance</th></tr></thead>
+                    <tbody id="ledgers-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-7">
+              <div class="stat-card">
+                <h5>Orders</h5>
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0">
+                    <thead><tr><th>Order</th><th>Shop</th><th>Status</th><th>Date</th></tr></thead>
+                    <tbody id="orders-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <div class="app-footer" id="footer-container"></div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="../js/adminlte.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/salesmandetail.js"></script>
+  <script src="../components/header.js"></script>
+  <script src="../components/sidebar.js"></script>
+  <script src="../components/footer.js"></script>
+  <script src="../js/masterLayout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () { loadLayout({basePath: '../'}); });
+  </script>
+</body>
+</html>

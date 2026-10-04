@@ -1,11 +1,8 @@
 package com.dairymart.dairyappserver.dto;
 
-import com.dairymart.dairyappserver.dao.GSTDao;
 import com.dairymart.dairyappserver.dao.ShopDao;
-import com.dairymart.dairyappserver.dao.UserAddressDao;
-import com.dairymart.dairyappserver.dao.UserDao;
-import jakarta.persistence.*;
-import org.apache.catalina.User;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.sql.Date;
 
@@ -92,10 +89,13 @@ public class ShopDTO {
         this.gstId = gstId;
     }
 
+    @JsonProperty("isActive")
+    @JsonAlias("active")
     public boolean isActive() {
         return isActive;
     }
 
+    @JsonProperty("isActive")
     public void setActive(boolean active) {
         isActive = active;
     }

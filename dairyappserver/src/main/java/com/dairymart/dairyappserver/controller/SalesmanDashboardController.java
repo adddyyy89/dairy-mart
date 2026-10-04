@@ -6,6 +6,7 @@ import com.dairymart.dairyappserver.dto.SalesmanToRetailDTO;
 import com.dairymart.dairyappserver.dto.UserWalletDTO;
 import com.dairymart.dairyappserver.service.*;
 import com.google.gson.Gson;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/salesman/dashboard")
+@Tag(name = "Salesman dashboard", description = "Salesman app home counts")
 public class SalesmanDashboardController {
 
     Logger logger = LoggerFactory.getLogger(SalesmanDashboardController.class);
@@ -30,13 +32,16 @@ public class SalesmanDashboardController {
     private UserWalletService userWalletService;
 
     @Autowired
-    private SalesmanToRetailService salesmanToRetailService;
+    private RetailOrderService retailOrderService;
 
     @Autowired
     private CrateService crateService;
 
     @Autowired
     private LedgerService ledgerService;
+
+    @Autowired
+    private UserService userService;
 
 
 
@@ -46,9 +51,9 @@ public class SalesmanDashboardController {
         int salesmanId = Integer.parseInt(userId);
 
         UserWalletDao walletDao = userWalletService.getWalletDetails(salesmanId);
+        UserDao userDao = userService.findById(salesmanId);
 
-
-        List<SalesmanOrdersDao> salesmanOrdersDaos = salesmanToRetailService.getCurrentOrdersPlaced(salesmanId);
+        int ordersPlaced = retailOrderService.getOrdersForSalesman(salesmanId).size();
 
         int cratesAssigned = crateService.getCurrentAssignedCrateForUser(salesmanId);
 
@@ -60,8 +65,10 @@ public class SalesmanDashboardController {
 
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("walletbalance", walletDao != null ? walletDao.getBalance() : "??");
-        jsonObject.put("ordersplaced", salesmanOrdersDaos.size());
+        jsonObject.put("ordersplaced", ordersPlaced);
         jsonObject.put("cratesassigned", cratesAssigned);
+        jsonObject.put("salesmanname", userDao.getFirstName() + " " + userDao.getLastName());
+        jsonObject.put("salesmanphonenumber", userDao.getPhoneNumber());
         jsonObject.put("recenttransactions", ledgerTransactionsDTOS);
 
         logger.info("Get Salesman dashboard data for salesman: " + userId + ", completed.");

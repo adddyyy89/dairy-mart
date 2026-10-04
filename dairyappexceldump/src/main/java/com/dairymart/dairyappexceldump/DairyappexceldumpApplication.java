@@ -33,11 +33,7 @@ public class DairyappexceldumpApplication {
 		SpringApplication.run(DairyappexceldumpApplication.class, args);
 	}
 
-	/**
-	 * Schedules the batch job to run daily at a specific time.
-	 * Example: Runs every day at 11:59 PM (23:59).
-	 * You can adjust the cron expression as needed.
-	 */
+	/** Nightly dump at 23:59. POST /dump/run runs the same job immediately. */
 	@Scheduled(cron = "0 59 23 * * ?") // Seconds Minutes Hours DayOfMonth Month DayOfWeek
 	public void runDailyDataExportJob() {
 		System.out.println("Attempting to launch dailyDataExportJob...");
